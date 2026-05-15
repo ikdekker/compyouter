@@ -1,0 +1,910 @@
+TFT Comp Builder - Modular Project StructureTo build this locally as a proper React + Vite project, create a new folder, open it in VS Code, and create the following files.1. Configuration & Setup FilesCreate these files in the root directory of your project.package.json{
+  name tft-comp-builder,
+  private true,
+  version 1.0.0,
+  type module,
+  scripts {
+    dev vite,
+    build vite build,
+    preview vite preview
+  },
+  dependencies {
+    lucide-react ^0.300.0,
+    react ^18.2.0,
+    react-dom ^18.2.0
+  },
+  devDependencies {
+    @vitejsplugin-react ^4.2.1,
+    autoprefixer ^10.4.16,
+    postcss ^8.4.32,
+    tailwindcss ^3.4.0,
+    vite ^5.0.8
+  }
+}
+vite.config.jsimport { defineConfig } from 'vite'
+import react from '@vitejsplugin-react'
+
+export default defineConfig({
+  plugins [react()],
+})
+tailwind.config.js @type {import('tailwindcss').Config} 
+export default {
+  content [
+    .index.html,
+    .src.{js,ts,jsx,tsx},
+  ],
+  theme {
+    extend {},
+  },
+  plugins [],
+}
+postcss.config.jsexport default {
+  plugins {
+    tailwindcss {},
+    autoprefixer {},
+  },
+}
+index.html!doctype html
+html lang=en
+  head
+    meta charset=UTF-8 
+    meta name=viewport content=width=device-width, initial-scale=1.0 
+    titleTFT Theorycrafting Enginetitle
+  head
+  body class=bg-slate-900 text-white
+    div id=rootdiv
+    script type=module src=srcmain.jsxscript
+  body
+html
+2. React Source Code (src folder)Create a src folder, and place these core files inside it.srcindex.css@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.custom-scrollbar-webkit-scrollbar { width 6px; height 8px; }
+.custom-scrollbar-webkit-scrollbar-track { background rgba(15, 23, 42, 0.5); border-radius 10px; }
+.custom-scrollbar-webkit-scrollbar-thumb { background #475569; border-radius 10px; }
+.custom-scrollbar-webkit-scrollbar-thumbhover { background #64748b; }
+srcmain.jsximport React from 'react'
+import ReactDOM from 'react-domclient'
+import App from '.App.jsx'
+import '.index.css'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  React.StrictMode
+    App 
+  React.StrictMode,
+)
+3. Data & UtilitiesCreate two sub-folders inside src data and utils.srcdatatftData.jsexport const MOCK_TRAITS = {
+  Bastion { levels [2, 4, 6] },
+  Brawler { levels [2, 4, 6] },
+  Challenger { levels [2, 3, 4, 5] },
+  Conduit { levels [2, 3, 4, 5] },
+  Fateweaver { levels [2, 4] },
+  Marauder { levels [2, 4, 6] },
+  Replicator { levels [2, 4] },
+  Rogue { levels [2, 3, 4, 5] },
+  Shepherd { levels [3, 5, 7] },
+  Sniper { levels [2, 3, 4] },
+  Vanguard { levels [2, 4, 6] },
+  Voyager { levels [2, 3, 4, 5, 6] },
+  Anima { levels [3, 6] },
+  Arbiter { levels [2, 3] },
+  Dark Star { levels [2, 4, 6, 9] },
+  Stargazer { levels [2, 4, 6] }, 
+  Meeple { levels [3, 5, 7, 10] },
+  Space Groove { levels [1, 3, 5, 7, 10] },
+  Mecha { levels [3, 4, 6] },
+  Psionic { levels [2, 4] },
+  N.O.V.A. { levels [2, 5] },
+  Primordian { levels [2, 3] },
+  Timebreaker { levels [2, 3, 4] },
+  Oracle { levels [1] },
+  Bulwark { levels [1] },
+  Commander { levels [1] },
+  Dark Lady { levels [1] },
+  Divine Duelist { levels [1] },
+  Doomer { levels [1] },
+  Factory New { levels [1] },
+  Galaxy Hunter { levels [1] },
+  Gun Goddess { levels [1] },
+  Party Animal { levels [1] },
+  Redeemer { levels [1] },
+  Eradicator { levels [1] }
+};
+
+export const MOCK_CHAMPIONS = [
+  { id 'aatrox', name 'Aatrox', cost 1, traits ['Bastion', 'N.O.V.A.'] },
+  { id 'briar', name 'Briar', cost 1, traits ['Anima', 'Primordian', 'Rogue'] },
+  { id 'caitlyn', name 'Caitlyn', cost 1, traits ['Fateweaver', 'N.O.V.A.'] },
+  { id 'chogath', name 'Cho'Gath', cost 1, traits ['Brawler', 'Dark Star'] },
+  { id 'ezreal', name 'Ezreal', cost 1, traits ['Sniper', 'Timebreaker'] },
+  { id 'leona', name 'Leona', cost 1, traits ['Arbiter', 'Vanguard'] },
+  { id 'lissandra', name 'Lissandra', cost 1, traits ['Dark Star', 'Replicator', 'Shepherd'] },
+  { id 'nasus', name 'Nasus', cost 1, traits ['Space Groove', 'Vanguard'] },
+  { id 'poppy', name 'Poppy', cost 1, traits ['Bastion', 'Meeple'] },
+  { id 'reksai', name 'Rek'Sai', cost 1, traits ['Brawler', 'Primordian'] },
+  { id 'talon', name 'Talon', cost 1, traits ['Rogue', 'Stargazer'] },
+  { id 'teemo', name 'Teemo', cost 1, traits ['Shepherd', 'Space Groove'] },
+  { id 'twistedfate', name 'Twisted Fate', cost 1, traits ['Fateweaver', 'Stargazer'] },
+  { id 'veigar', name 'Veigar', cost 1, traits ['Meeple', 'Replicator'] },
+  { id 'akali', name 'Akali', cost 2, traits ['Marauder', 'N.O.V.A.'] },
+  { id 'belveth', name 'Bel'Veth', cost 2, traits ['Challenger', 'Marauder', 'Primordian'] },
+  { id 'gnar', name 'Gnar', cost 2, traits ['Meeple', 'Sniper'] },
+  { id 'gragas', name 'Gragas', cost 2, traits ['Brawler', 'Psionic'] },
+  { id 'gwen', name 'Gwen', cost 2, traits ['Rogue', 'Space Groove'] },
+  { id 'jax', name 'Jax', cost 2, traits ['Bastion', 'Stargazer'] },
+  { id 'jinx', name 'Jinx', cost 2, traits ['Anima', 'Challenger'] },
+  { id 'meepsie', name 'Meepsie', cost 2, traits ['Meeple', 'Shepherd', 'Voyager'] },
+  { id 'milio', name 'Milio', cost 2, traits ['Fateweaver', 'Timebreaker'] },
+  { id 'mordekaiser', name 'Mordekaiser', cost 2, traits ['Conduit', 'Dark Star', 'Vanguard'] },
+  { id 'pantheon', name 'Pantheon', cost 2, traits ['Brawler', 'Replicator', 'Timebreaker'] },
+  { id 'pyke', name 'Pyke', cost 2, traits ['Psionic', 'Voyager'] },
+  { id 'zoe', name 'Zoe', cost 2, traits ['Arbiter', 'Conduit'] },
+  { id 'aurora', name 'Aurora', cost 3, traits ['Anima', 'Voyager'] },
+  { id 'diana', name 'Diana', cost 3, traits ['Arbiter', 'Challenger'] },
+  { id 'fizz', name 'Fizz', cost 3, traits ['Meeple', 'Rogue'] },
+  { id 'illaoi', name 'Illaoi', cost 3, traits ['Anima', 'Shepherd', 'Vanguard'] },
+  { id 'kaisa', name 'Kai'Sa', cost 3, traits ['Dark Star', 'Rogue'] },
+  { id 'lulu', name 'Lulu', cost 3, traits ['Replicator', 'Stargazer'] },
+  { id 'maokai', name 'Maokai', cost 3, traits ['Brawler', 'N.O.V.A.'] },
+  { id 'missfortune', name 'Miss Fortune', cost 3, traits ['Challenger', 'Conduit', 'Replicator', 'Gun Goddess'] },
+  { id 'ornn', name 'Ornn', cost 3, traits ['Bastion', 'Space Groove'] },
+  { id 'rhaast', name 'Rhaast', cost 3, traits ['Redeemer'] },
+  { id 'samira', name 'Samira', cost 3, traits ['Sniper', 'Space Groove'] },
+  { id 'urgot', name 'Urgot', cost 3, traits ['Brawler', 'Marauder', 'Mecha'] },
+  { id 'viktor', name 'Viktor', cost 3, traits ['Conduit', 'Psionic'] },
+  { id 'aurelionsol', name 'Aurelion Sol', cost 4, traits ['Conduit', 'Mecha'] },
+  { id 'corki', name 'Corki', cost 4, traits ['Fateweaver', 'Meeple'] },
+  { id 'karma', name 'Karma', cost 4, traits ['Dark Star', 'Voyager'] },
+  { id 'kindred', name 'Kindred', cost 4, traits ['Challenger', 'N.O.V.A.'] },
+  { id 'leblanc', name 'LeBlanc', cost 4, traits ['Arbiter', 'Shepherd'] },
+  { id 'masteryi', name 'Master Yi', cost 4, traits ['Marauder', 'Psionic'] },
+  { id 'nami', name 'Nami', cost 4, traits ['Replicator', 'Space Groove'] },
+  { id 'nunu', name 'Nunu & Willump', cost 4, traits ['Stargazer', 'Vanguard'] },
+  { id 'rammus', name 'Rammus', cost 4, traits ['Bastion', 'Meeple'] },
+  { id 'riven', name 'Riven', cost 4, traits ['Rogue', 'Timebreaker'] },
+  { id 'tahmkench', name 'Tahm Kench', cost 4, traits ['Brawler', 'Oracle'] },
+  { id 'mech', name 'The Mighty Mech', cost 4, traits ['Mecha', 'Voyager'] },
+  { id 'xayah', name 'Xayah', cost 4, traits ['Sniper', 'Stargazer'] },
+  { id 'bard', name 'Bard', cost 5, traits ['Conduit', 'Meeple'] },
+  { id 'blitzcrank', name 'Blitzcrank', cost 5, traits ['Space Groove', 'Vanguard', 'Party Animal'] },
+  { id 'fiora', name 'Fiora', cost 5, traits ['Anima', 'Marauder', 'Divine Duelist'] },
+  { id 'graves', name 'Graves', cost 5, traits ['Factory New'] },
+  { id 'jhin', name 'Jhin', cost 5, traits ['Dark Star', 'Sniper', 'Eradicator'] },
+  { id 'morgana', name 'Morgana', cost 5, traits ['Dark Lady'] },
+  { id 'shen', name 'Shen', cost 5, traits ['Bastion', 'Bulwark'] },
+  { id 'sona', name 'Sona', cost 5, traits ['Psionic', 'Shepherd', 'Commander'] },
+  { id 'vex', name 'Vex', cost 5, traits ['Doomer'] },
+  { id 'zed', name 'Zed', cost 5, traits ['Galaxy Hunter'] }
+];
+srcutilshelpers.jsimport { MOCK_TRAITS, MOCK_CHAMPIONS } from '..datatftData';
+
+export const getTierColor = (tier) = {
+  switch(tier) {
+    case 'gold' return 'bg-yellow-90040 text-yellow-300 border-yellow-400';
+    case 'silver' return 'bg-slate-70080 text-slate-200 border-slate-300';
+    case 'bronze' return 'bg-amber-90040 text-amber-500 border-amber-700';
+    default return 'bg-slate-800 text-slate-400 border-slate-600';
+  }
+};
+
+export const getCostColor = (cost) = {
+  switch(cost) {
+    case 1 return 'border-gray-400 text-gray-400';
+    case 2 return 'border-green-400 text-green-400';
+    case 3 return 'border-blue-400 text-blue-400';
+    case 4 return 'border-purple-400 text-purple-400';
+    case 5 return 'border-yellow-400 text-yellow-400';
+    default return 'border-slate-500 text-slate-500';
+  }
+};
+
+export const getBoardTraitCounts = (units, emblems = []) = {
+  const counts = {};
+  const champTraitMap = {};
+  
+  units.forEach(u = {
+    if (!champTraitMap[u.name]) champTraitMap[u.name] = new Set();
+    u.traits.forEach(t = champTraitMap[u.name].add(t));
+  });
+
+  Object.values(champTraitMap).forEach(traitSet = {
+    traitSet.forEach(t = {
+      counts[t] = (counts[t]  0) + 1;
+    });
+  });
+  
+  emblems.forEach(e = {
+    counts[e] = (counts[e]  0) + 1;
+  });
+
+  return counts;
+};
+
+export const getSynergies = (units, emblems = []) = {
+  const counts = getBoardTraitCounts(units, emblems);
+  const activeSynergies = [];
+
+  for (const [trait, count] of Object.entries(counts)) {
+    const traitInfo = MOCK_TRAITS[trait];
+    if (!traitInfo) continue;
+
+    let activeLevel = 0;
+    let nextLevel = traitInfo.levels.find(l = l  count)  null;
+    let tier = 'inactive';
+
+    for (let i = 0; i  traitInfo.levels.length; i++) {
+      if (count = traitInfo.levels[i]) {
+        activeLevel = traitInfo.levels[i];
+        const maxLevelIndex = traitInfo.levels.length - 1;
+        if (i === maxLevelIndex) tier = 'gold';
+        else if (i = maxLevelIndex - 1) tier = 'silver';
+        else tier = 'bronze';
+      }
+    }
+
+    if (count  0) {
+      activeSynergies.push({
+        name trait,
+        count,
+        activeLevel,
+        nextLevel,
+        tier,
+        levels traitInfo.levels
+      });
+    }
+  }
+
+  return activeSynergies.sort((a, b) = {
+    if (a.activeLevel  0 && b.activeLevel === 0) return -1;
+    if (a.activeLevel === 0 && b.activeLevel  0) return 1;
+    return b.count - a.count;
+  });
+};
+
+export const getSuggestions = (units, emblems = [], strategy = 'standard') = {
+  if (units.length === 0  units.length = 10) return [];
+  const counts = getBoardTraitCounts(units, emblems);
+  const uniqueChampions = new Set(units.map(u = u.name));
+
+  const scored = MOCK_CHAMPIONS
+    .filter(champ = !uniqueChampions.has(champ.name))
+    .map(champ = {
+      let score = 0;
+      const reasons = [];
+
+      champ.traits.forEach(trait = {
+        const traitInfo = MOCK_TRAITS[trait];
+        if (!traitInfo) return;
+
+        const currentCount = counts[trait]  0;
+        const nextLevel = traitInfo.levels.find(l = l  currentCount);
+
+        if (nextLevel) {
+          const distance = nextLevel - currentCount;
+          if (currentCount  0) {
+            if (distance === 1) {
+              score += 100;
+              reasons.push({ trait, type 'complete', text `Completes ${nextLevel} ${trait}` });
+            } else {
+              score += 30;
+              reasons.push({ trait, type 'progress', text `+1 ${trait}` });
+            }
+          } else {
+             if (traitInfo.levels[0] === 1) score += 15; 
+             else score += 2; 
+          }
+        }
+      });
+
+      if (strategy === 'standard') score += (champ.cost  2); 
+      else if (strategy === 'fast9' && champ.cost = 4) score += (champ.cost === 5  60  30);
+      else if (strategy === 'reroll3' && champ.cost === 3) score += 60;
+      else if (strategy === 'reroll2' && champ.cost === 2) score += 60;
+      else if (strategy === 'hyper1' && champ.cost === 1) score += 60;
+      
+      return { ...champ, score, reasons };
+    })
+    .filter(champ = champ.score = 30  (champ.score = 15 && champ.cost === 5)  (strategy !== 'standard' && champ.score = 50))
+    .sort((a, b) = b.score - a.score);
+
+  return scored.slice(0, 6);
+};
+4. Component StructureCreate a components folder inside src.srccomponentsBoardPanel.jsximport React, { useState, useMemo } from 'react';
+import { X, ShieldPlus, RefreshCcw, Star, Wand2, Lightbulb, GitBranch } from 'lucide-react';
+import { getTierColor, getBoardTraitCounts, getSynergies, getSuggestions, getCostColor } from '..utilshelpers';
+import { MOCK_TRAITS } from '..datatftData';
+
+const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, onClose, canClose, onAddDirect, onStrategyChange, onAddEmblem, onRemoveEmblem, onTraitClick, onOpenFill }) = {
+  const [hoveredTrait, setHoveredTrait] = useState(null);
+  const synergies = useMemo(() = getSynergies(board.units, board.emblems), [board.units, board.emblems]);
+  const suggestedChampions = useMemo(() = getSuggestions(board.units, board.emblems, board.strategy), [board.units, board.emblems, board.strategy]);
+  
+  const activeTraits = synergies.filter(s = s.activeLevel  0);
+  const uniqueCount = activeTraits.filter(s = s.levels.length === 1 && s.levels[0] === 1).length;
+  const nonUniqueCount = activeTraits.length - uniqueCount;
+
+  const currentTraitCounts = useMemo(() = getBoardTraitCounts(board.units, board.emblems), [board.units, board.emblems]);
+
+  return (
+    div 
+      onClick={() = onFocus(board.id)}
+      className={`flex-1 min-w-[360px] bg-slate-800 rounded-lg shadow-xl p-4 flex flex-col border-2 transition-all ${
+        isSingle  'max-w-full'  'max-w-[600px]'
+      } ${
+        isActive  'border-blue-500 shadow-blue-90020'  'border-slate-700 opacity-60 hoveropacity-100 cursor-pointer'
+      }`}
+    
+      div className=flex justify-between items-start mb-4 border-b border-slate-700 pb-3
+         div className=flex flex-col gap-1.5 w-full
+           div className=flex items-center gap-3
+             div className={`w-3 h-3 rounded-full shrink-0 ${isActive  'bg-blue-500 animate-pulse'  'bg-slate-600'}`} 
+             span className=font-bold text-lg text-slate-200 truncate{board.name}span
+             span className=bg-slate-700 px-2 py-0.5 rounded text-xs font-semibold text-slate-300 shrink-0
+               {board.units.length}  10
+             span
+             select 
+               value={board.strategy  'standard'} 
+               onChange={(e) = onStrategyChange(board.id, e.target.value)}
+               onClick={(e) = e.stopPropagation()}
+               className=bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1 text-slate-300 focusoutline-none focusborder-blue-500 cursor-pointer hoverbg-slate-700 shrink-0
+               title=Roll Strategy
+             
+               option value=standardFlex  Standardoption
+               option value=fast9Fast 9 (Legendaries)option
+               option value=reroll3Slow Roll (3-Cost)option
+               option value=reroll2Slow Roll (2-Cost)option
+               option value=hyper1Hyper Roll (1-Cost)option
+             select
+           div
+           div className=text-xs text-slate-400 flex items-center flex-wrap gap-2 pl-6
+             spanActive Traitsspan
+             span className=bg-slate-70050 px-1.5 rounded text-slate-300strong className=text-white{nonUniqueCount}strong Non-Uniquespan
+             span className=bg-slate-70050 px-1.5 rounded text-slate-300strong className=text-white{uniqueCount}strong Uniquespan
+           div
+           div className=flex flex-wrap items-center gap-1.5 pl-6 mt-1
+             button onClick={(e) = { e.stopPropagation(); onAddEmblem(board.id); }} className=px-2 py-0.5 rounded text-[10px] uppercase font-bold border border-yellow-600 bg-yellow-90040 text-yellow-400 hoverbg-yellow-500 hovertext-slate-900 transition-colors flex items-center gap-1
+               ShieldPlus size={12}  Add Emblem
+             button
+             {(board.emblems  []).map((e, idx) = (
+                span 
+                   key={`${e}-${idx}`} 
+                   onClick={(evt) = { evt.stopPropagation(); onRemoveEmblem(board.id, idx); }}
+                   className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border cursor-crosshair hoverbg-red-900 hovertext-red-400 hoverborder-red-700 flex items-center gap-1 transition-all duration-300 ${hoveredTrait === e  'bg-yellow-400 text-slate-900 border-white scale-110 shadow-lg z-10'  'bg-yellow-90040 text-yellow-300 border-yellow-700'}`}
+                   title={`Remove ${e} Emblem`}
+                
+                   {e} X size={10} strokeWidth={3} 
+                span
+             ))}
+           div
+         div
+         div className=flex items-center gap-2 ml-2
+           button onClick={(e) = { e.stopPropagation(); onOpenFill(board.id); }} className=p-1.5 bg-indigo-90060 border border-indigo-50050 hoverbg-indigo-600 hoverborder-indigo-400 rounded text-indigo-300 hovertext-white shrink-0 flex items-center gap-1 transition-all title=Engine Analysis Auto-Fill
+             Wand2 size={16} 
+           button
+           button onClick={(e) = { e.stopPropagation(); onBranch(board.id); }} className=p-1.5 bg-slate-700 hoverbg-blue-600 rounded text-slate-300 hovertext-white shrink-0 title=Branch this path
+             GitBranch size={16} 
+           button
+           {canClose && (
+             button onClick={(e) = { e.stopPropagation(); onClose(board.id); }} className=p-1.5 bg-slate-700 hoverbg-red-600 rounded text-slate-300 hovertext-white shrink-0 title=Close path
+               X size={16} 
+             button
+           )}
+         div
+      div
+
+      div className=flex flex-wrap gap-1.5 mb-4 min-h-[32px]
+        {synergies.length === 0 && span className=text-slate-500 text-sm italicAdd units to see traits...span}
+        {synergies.map(syn = {
+          const progress = syn.nextLevel  `${syn.count}${syn.nextLevel}`  `${syn.count}${syn.activeLevel}`;
+          return (
+            div 
+              key={syn.name} 
+              onMouseEnter={() = setHoveredTrait(syn.name)}
+              onMouseLeave={() = setHoveredTrait(null)}
+              onClick={(e) = { e.stopPropagation(); onTraitClick(board.id, syn.name); }}
+              className={`px-2 py-0.5 rounded text-xs border flex items-center gap-1.5 transition-all cursor-pointer hoverbrightness-125 ${getTierColor(syn.tier)} ${hoveredTrait === syn.name  'scale-110 shadow-lg z-10 ring-1 ring-white50'  ''}`}
+            
+              span className=font-bold{syn.name}span
+              span className=bg-black20 px-1 rounded font-mono text-[10px] tracking-widest{progress}span
+            div
+          );
+        })}
+      div
+
+      div className=grid grid-cols-5 gap-2 mb-4
+        {Array.from({ length 10 }).map((_, idx) = {
+          const champ = board.units[idx];
+          
+          let isSwapout = false;
+          let matchedCount = 0;
+          let champMatchedTraits = {};
+          let highlightClass = '';
+
+          if (champ) {
+            const otherUnits = board.units.filter(u = u.instanceId !== champ.instanceId);
+            const withoutCounts = getBoardTraitCounts(otherUnits, board.emblems);
+            const allUnitTraits = [...champ.traits];
+            
+            let providesThreshold = false;
+            allUnitTraits.forEach(trait = {
+                const countWith = currentTraitCounts[trait]  0;
+                const countWithout = withoutCounts[trait]  0;
+                const traitInfo = MOCK_TRAITS[trait];
+                if (traitInfo) {
+                    let levelWith = 0; traitInfo.levels.forEach(l = { if (countWith = l) levelWith = l; });
+                    let levelWithout = 0; traitInfo.levels.forEach(l = { if (countWithout = l) levelWithout = l; });
+                    if (levelWith  levelWithout) providesThreshold = true;
+                }
+
+                const isActive = traitInfo && traitInfo.levels.some(l = countWith = l);
+                const isProgressing = countWith  1;
+                if (isActive  isProgressing) {
+                   matchedCount++;
+                   champMatchedTraits[trait] = true;
+                }
+            });
+            isSwapout = !providesThreshold;
+
+            if (hoveredTrait) {
+              if (champ.traits.includes(hoveredTrait)  (board.emblems && board.emblems.includes(hoveredTrait))) {
+                highlightClass = 'ring-2 ring-white scale-110 z-10 shadow-[0_0_15px_rgba(255,255,255,0.3)] !opacity-100';
+              } else {
+                highlightClass = 'opacity-20 grayscale scale-95';
+              }
+            }
+          }
+
+          return (
+            div 
+              key={idx} 
+              onClick={(e) = {
+                 if (champ) {
+                   e.stopPropagation();
+                   onRemove(board.id, champ.instanceId);
+                 }
+              }}
+              className={`h-16 mdh-20 rounded border flex flex-col items-center justify-center p-1 relative transition-all duration-300 ${
+                champ 
+                   `bg-slate-800 ${getCostColor(champ.cost)} cursor-pointer hoverbg-red-90040 hoverborder-red-500 group ${highlightClass  'hoveropacity-80'}` 
+                   'border-slate-700 border-dashed bg-slate-80050 text-slate-600'
+              }`}
+            
+              {champ  (
+                
+                  {(isSwapout  matchedCount  0) && (
+                    div className=absolute -top-2 -right-2 flex items-center shadow-lg z-10 scale-90 origin-top-right
+                      {matchedCount  0 && (
+                        div title={isSwapout  `${matchedCount} trait(s) matched but no thresholds reached.`  `${matchedCount} trait(s) matching and providing essential thresholds!`} className={`${isSwapout  'bg-amber-500 text-amber-950 border-amber-700'  'bg-emerald-500 text-emerald-950 border-emerald-700'} px-1.5 py-[3px] text-[10px] font-bold rounded-l-full border border-r-0 flex items-center h-[22px]`}
+                          {matchedCount}
+                        div
+                      )}
+                      div title={isSwapout  Suggested Swap This unit provides no active synergy thresholds.  Core Unit Provides active synergy thresholds.} className={`${isSwapout  'bg-amber-600 border-amber-800'  'bg-emerald-600 border-emerald-800'} text-white p-1 border flex items-center justify-center h-[22px] w-[22px] ${matchedCount  0  'rounded-r-full'  'rounded-full'}`}
+                        {isSwapout  RefreshCcw size={12} strokeWidth={3}   Star size={10} strokeWidth={3} fill=currentColor }
+                      div
+                    div
+                  )}
+
+                  div className=flex flex-col items-center justify-center w-full h-full text-center overflow-hidden
+                    span className=font-bold text-[10px] mdtext-xs leading-tight truncate w-full px-0.5 text-white{champ.name}span
+                    div className=flex flex-wrap justify-center gap-[2px] w-full px-0.5 mt-0.5
+                       {champ.traits.map(t = {
+                         let traitColor = 'text-slate-400';
+                         if (hoveredTrait === t) traitColor = 'text-white font-bold';
+                         else if (champMatchedTraits[t]) traitColor = isSwapout  'text-amber-300'  'text-emerald-400';
+                         
+                         return (
+                           span key={t} className={`text-[8px] leading-none truncate max-w-full transition-colors duration-300 ${traitColor}`}
+                             {t}
+                           span
+                         );
+                       })}
+                    div
+                  div
+                
+              )  (
+                span className=text-xs opacity-50{idx + 1}span
+              )}
+            div
+          );
+        })}
+      div
+
+      {board.units.length  0 && board.units.length  10 && suggestedChampions.length  0 && (
+        div className=mt-auto bg-slate-90050 rounded p-3 border border-blue-90030
+          h3 className=text-xs font-bold text-blue-400 flex items-center gap-1.5 mb-2 uppercase tracking-wider
+            Lightbulb size={12}  Optimal Additions
+          h3
+          div className={`grid gap-2 ${isSingle  'grid-cols-2 mdgrid-cols-3 lggrid-cols-6'  'grid-cols-2'}`}
+            {suggestedChampions.slice(0, isSingle  6  4).map(champ = (
+              button
+                key={`suggest-${champ.id}`}
+                onClick={(e) = { e.stopPropagation(); onAddDirect(board.id, champ); }}
+                className={`p-1.5 rounded border border-blue-80040 bg-slate-800 hoverbg-blue-900 hoverborder-blue-500 transition-all text-left flex flex-col gap-0.5`}
+              
+                div className=flex justify-between items-center w-full
+                  span className=font-semibold text-xs truncate{champ.name}span
+                  span className={`text-[9px] font-bold px-1 rounded ${getCostColor(champ.cost).replace('text-', 'bg-').replace('border-', 'bg-').replace('-400', '-900')} text-white`}
+                    ${champ.cost}
+                  span
+                div
+                div className=text-[8px] text-slate-400 truncate w-full mb-0.5
+                  {champ.traits.join(' • ')}
+                div
+                div className=flex flex-col gap-[1px]
+                  {champ.reasons.slice(0, 2).map((r, i) = (
+                    span key={i} className={`text-[8px] px-1 py-[1px] rounded truncate ${
+                      r.type === 'complete'  'bg-emerald-50020 text-emerald-300 font-bold'  'text-slate-400'
+                    }`}
+                      {r.text}
+                    span
+                  ))}
+                div
+              button
+            ))}
+          div
+        div
+      )}
+    div
+  );
+};
+
+export default BoardPanel;
+5. Main App LogicsrcApp.jsximport React, { useState, useMemo } from 'react';
+import { Search, Users, X, ShieldPlus, Wand2, Loader2 } from 'lucide-react';
+import BoardPanel from '.componentsBoardPanel';
+import { MOCK_TRAITS, MOCK_CHAMPIONS } from '.datatftData';
+import { getBoardTraitCounts, getCostColor } from '.utilshelpers';
+
+export default function App() {
+  const [boards, setBoards] = useState([
+    { id 'base', name 'Main Path', units [], strategy 'standard', emblems [] }
+  ]);
+  const [activeBoardId, setActiveBoardId] = useState('base');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [emblemConfig, setEmblemConfig] = useState(null); 
+  const [traitPopup, setTraitPopup] = useState(null);
+  const [fillModal, setFillModal] = useState(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  const handleAddToBoard = (boardId, champion) = {
+    setBoards(prev = prev.map(b = {
+      if (b.id === boardId && b.units.length  10) {
+        return { ...b, units [...b.units, { ...champion, instanceId Math.random().toString(36).substr(2, 9) }] };
+      }
+      return b;
+    }));
+  };
+
+  const handleRemoveFromBoard = (boardId, instanceId) = {
+    setBoards(prev = prev.map(b = b.id === boardId  { ...b, units b.units.filter(u = u.instanceId !== instanceId) }  b));
+  };
+
+  const handleBranchBoard = (boardId) = {
+    const sourceBoard = boards.find(b = b.id === boardId);
+    const newId = Math.random().toString(36).substr(2, 9);
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const newBoard = {
+      id newId,
+      name `Path ${alphabet[boards.length % 26]}`,
+      units [...sourceBoard.units],
+      strategy sourceBoard.strategy,
+      emblems [...(sourceBoard.emblems  [])]
+    };
+    setBoards(prev = [...prev, newBoard]);
+    setActiveBoardId(newId);
+  };
+
+  const handleStrategyChange = (boardId, newStrategy) = {
+    setBoards(prev = prev.map(b = b.id === boardId  { ...b, strategy newStrategy }  b));
+  };
+
+  const handleCloseBoard = (boardId) = {
+    if (boards.length = 1) return;
+    setBoards(prev = {
+      const filtered = prev.filter(b = b.id !== boardId);
+      if (activeBoardId === boardId) setActiveBoardId(filtered[0].id);
+      return filtered;
+    });
+  };
+
+  const handleAddEmblem = (traitName) = {
+    if (!emblemConfig) return;
+    setBoards(prev = prev.map(b = {
+      if (b.id === emblemConfig) {
+        return { ...b, emblems [...(b.emblems  []), traitName] };
+      }
+      return b;
+    }));
+    setEmblemConfig(null);
+  };
+
+  const handleRemoveEmblem = (boardId, indexToRemove) = {
+    setBoards(prev = prev.map(b = {
+      if (b.id === boardId) {
+        return { ...b, emblems (b.emblems  []).filter((_, idx) = idx !== indexToRemove) };
+      }
+      return b;
+    }));
+  };
+
+  const filteredChampions = useMemo(() = {
+    return MOCK_CHAMPIONS
+      .filter(c = c.name.toLowerCase().includes(searchTerm.toLowerCase())  
+                   c.traits.some(t = t.toLowerCase().includes(searchTerm.toLowerCase())))
+      .sort((a, b) = a.cost - b.cost  a.name.localeCompare(b.name));
+  }, [searchTerm]);
+
+  const craftableTraits = Object.entries(MOCK_TRAITS)
+    .filter(([_, info]) = !(info.levels.length === 1 && info.levels[0] === 1))
+    .map(([name]) = name)
+    .sort();
+
+  const handleAutoFill = (boardId, focusTrait, targetSize) = {
+    setIsCalculating(true);
+    
+    setTimeout(() = {
+      const sourceBoard = boards.find(b = b.id === boardId);
+      let beam = [{ units [...sourceBoard.units], score 0 }];
+      const beamWidth = 25; 
+
+      for (let step = sourceBoard.units.length; step  targetSize; step++) {
+        let nextCandidates = new Map();
+
+        for (let state of beam) {
+          const existingNames = new Set(state.units.map(u = u.name));
+          const pool = MOCK_CHAMPIONS.filter(c = !existingNames.has(c.name));
+
+          for (let champ of pool) {
+            const newUnits = [...state.units, { ...champ, instanceId Math.random().toString(36).substr(2, 9) }];
+            const hash = newUnits.map(u = u.name).sort().join(',');
+
+            if (!nextCandidates.has(hash)) {
+              let score = 0;
+              const counts = getBoardTraitCounts(newUnits, sourceBoard.emblems);
+
+              if (focusTrait) {
+                const focusCount = counts[focusTrait]  0;
+                let focusActiveLvl = 0;
+                const focusInfo = MOCK_TRAITS[focusTrait];
+                if (focusInfo) {
+                  focusInfo.levels.forEach(l = { if (focusCount = l) focusActiveLvl = l; });
+                  score += focusCount  1000;
+                  score += focusActiveLvl  5000; 
+                }
+              }
+
+              for (const [trait, count] of Object.entries(counts)) {
+                if (trait === focusTrait) continue; 
+                const info = MOCK_TRAITS[trait];
+                if (info) {
+                  let activeLvl = 0;
+                  info.levels.forEach(l = { if (count = l) activeLvl = l; });
+                  if (activeLvl  0) score += (activeLvl  200); 
+                  score += count  15; 
+                }
+              }
+
+              const costSum = newUnits.reduce((acc, u) = acc + u.cost, 0);
+              score += costSum  2;
+
+              nextCandidates.set(hash, { units newUnits, score });
+            }
+          }
+        }
+
+        beam = Array.from(nextCandidates.values())
+          .sort((a, b) = b.score - a.score)
+          .slice(0, beamWidth);
+      }
+
+      const bestComp = beam[0].units;
+      
+      const newId = Math.random().toString(36).substr(2, 9);
+      const newBoard = {
+        id newId,
+        name `Auto-Fill ${focusTrait  'Balanced'}`,
+        units bestComp,
+        strategy sourceBoard.strategy,
+        emblems [...(sourceBoard.emblems  [])]
+      };
+      
+      setBoards(prev = [...prev, newBoard]);
+      setActiveBoardId(newId);
+      setFillModal(null);
+      setIsCalculating(false);
+    }, 100); 
+  };
+
+  return (
+    div className=min-h-screen bg-slate-900 text-slate-100 p-4 mdp-6 font-sans flex flex-col gap-6
+      div className=flex-1 overflow-x-auto pb-2 custom-scrollbar
+        div className=flex gap-4 h-full
+          {boards.map(board = (
+            BoardPanel 
+              key={board.id}
+              board={board}
+              isActive={activeBoardId === board.id}
+              isSingle={boards.length === 1}
+              canClose={boards.length  1}
+              onFocus={setActiveBoardId}
+              onRemove={handleRemoveFromBoard}
+              onBranch={handleBranchBoard}
+              onClose={handleCloseBoard}
+              onAddDirect={handleAddToBoard}
+              onStrategyChange={handleStrategyChange}
+              onAddEmblem={(bid) = setEmblemConfig(bid)}
+              onRemoveEmblem={handleRemoveEmblem}
+              onTraitClick={(boardId, traitName) = setTraitPopup({ boardId, traitName })}
+              onOpenFill={(boardId) = setFillModal({ boardId, focusTrait '', targetSize 8 })}
+            
+          ))}
+        div
+      div
+
+      div className=bg-slate-800 rounded-lg shadow-xl p-4 border border-slate-700 flex flex-col h-72 shrink-0
+        div className=flex justify-between items-center mb-4
+          div className=flex items-center gap-4
+            h2 className=text-lg font-bold flex items-center gap-2
+              Users className=text-green-400 size={20}  Champion Pool
+            h2
+          div
+          div className=relative w-64
+            Search className=absolute left-2 top-2 text-slate-400 size={16} 
+            input 
+              type=text 
+              placeholder=Search champions...
+              value={searchTerm}
+              onChange={(e) = setSearchTerm(e.target.value)}
+              className=w-full bg-slate-900 border border-slate-600 rounded-full py-1.5 pl-8 pr-4 text-sm focusoutline-none focusborder-blue-500 focusring-1 focusring-blue-500 transition-all
+            
+          div
+        div
+        
+        div className=flex-1 overflow-y-auto pr-2 custom-scrollbar
+           div className=grid grid-cols-2 smgrid-cols-4 mdgrid-cols-6 lggrid-cols-8 xlgrid-cols-10 gap-2
+             {filteredChampions.map(champ = (
+               button
+                 key={champ.id}
+                 onClick={() = handleAddToBoard(activeBoardId, champ)}
+                 className={`p-2 rounded border border-slate-700 bg-slate-900 hoverbg-slate-700 hoverborder-slate-500 transition-all text-left flex flex-col gap-1`}
+               
+                 div className=flex justify-between items-center w-full
+                   span className=font-semibold text-xs truncate pr-1{champ.name}span
+                   span className={`text-[10px] font-bold px-1.5 rounded ${getCostColor(champ.cost).replace('text-', 'bg-').replace('border-', 'bg-').replace('-400', '-900')} text-white`}
+                     ${champ.cost}
+                   span
+                 div
+                 div className=text-[8px] text-slate-400 truncate w-full uppercase tracking-wider
+                   {champ.traits.join(' • ')}
+                 div
+               button
+             ))}
+           div
+        div
+      div
+
+      {emblemConfig && (
+        div className=fixed inset-0 bg-black60 flex items-center justify-center z-50 p-4 onClick={() = setEmblemConfig(null)}
+          div className=bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-2xl w-full max-w-2xl onClick={e = e.stopPropagation()}
+            div className=flex justify-between items-center mb-4
+              h3 className=text-xl font-bold text-slate-100 flex items-center gap-2
+                ShieldPlus className=text-yellow-400  Select an Emblem
+              h3
+              button onClick={() = setEmblemConfig(null)} className=text-slate-400 hovertext-whiteX size={20}button
+            div
+            div className=grid grid-cols-3 smgrid-cols-4 mdgrid-cols-5 gap-2 max-h-96 overflow-y-auto custom-scrollbar p-1
+              {craftableTraits.map(trait = (
+                button 
+                  key={trait} 
+                  onClick={() = handleAddEmblem(trait)}
+                  className=p-2 border border-slate-600 rounded bg-slate-700 hoverbg-yellow-600 hoverborder-yellow-300 hovertext-yellow-950 transition-colors text-sm font-semibold text-center
+                
+                  {trait}
+                button
+              ))}
+            div
+          div
+        div
+      )}
+
+      {traitPopup && (
+        div className=fixed inset-0 bg-black60 flex items-center justify-center z-50 p-4 onClick={() = setTraitPopup(null)}
+          div className=bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[80vh] onClick={e = e.stopPropagation()}
+            div className=flex justify-between items-center mb-4
+              div
+                h3 className=text-xl font-bold text-slate-100 flex items-center gap-2
+                  {traitPopup.traitName} Champions
+                h3
+                p className=text-sm text-slate-400 mt-1Click a champion to add them to your board.p
+              div
+              button onClick={() = setTraitPopup(null)} className=text-slate-400 hovertext-white p-1 bg-slate-700 hoverbg-slate-600 rounded transition-colorsX size={20}button
+            div
+            
+            div className=overflow-y-auto pr-2 custom-scrollbar flex-1
+              div className=grid grid-cols-2 smgrid-cols-3 mdgrid-cols-4 lggrid-cols-5 gap-2
+                {MOCK_CHAMPIONS
+                  .filter(c = c.traits.includes(traitPopup.traitName))
+                  .sort((a, b) = a.cost - b.cost  a.name.localeCompare(b.name))
+                  .map(champ = (
+                    button
+                      key={`popup-${champ.id}`}
+                      onClick={() = handleAddToBoard(traitPopup.boardId, champ)}
+                      className={`p-2 rounded border border-slate-700 bg-slate-900 hoverbg-slate-700 hoverborder-slate-500 transition-all text-left flex flex-col gap-1`}
+                    
+                      div className=flex justify-between items-center w-full
+                        span className=font-semibold text-xs truncate pr-1{champ.name}span
+                        span className={`text-[10px] font-bold px-1.5 rounded ${getCostColor(champ.cost).replace('text-', 'bg-').replace('border-', 'bg-').replace('-400', '-900')} text-white`}
+                          ${champ.cost}
+                        span
+                      div
+                      div className=text-[8px] text-slate-400 truncate w-full uppercase tracking-wider
+                        {champ.traits.join(' • ')}
+                      div
+                    button
+                ))}
+              div
+            div
+          div
+        div
+      )}
+
+      {fillModal && (
+        div className=fixed inset-0 bg-black60 flex items-center justify-center z-50 p-4 onClick={() = !isCalculating && setFillModal(null)}
+          div className=bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-2xl w-full max-w-sm onClick={e = e.stopPropagation()}
+            div className=flex justify-between items-center mb-6
+              h3 className=text-xl font-bold text-slate-100 flex items-center gap-2
+                Wand2 className=text-indigo-400  Engine Fill Mode
+              h3
+              {!isCalculating && button onClick={() = setFillModal(null)} className=text-slate-400 hovertext-whiteX size={20}button}
+            div
+            
+            div className=flex flex-col gap-4 mb-6
+              div
+                label className=block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5Target Team Sizelabel
+                input 
+                  type=range 
+                  min={boards.find(b = b.id === fillModal.boardId).units.length  1} 
+                  max=10 
+                  value={fillModal.targetSize}
+                  onChange={e = setFillModal(prev = ({ ...prev, targetSize parseInt(e.target.value) }))}
+                  className=w-full accent-indigo-500
+                  disabled={isCalculating}
+                
+                div className=text-right text-sm font-bold text-indigo-300 mt-1{fillModal.targetSize} Unitsdiv
+              div
+
+              div
+                label className=block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5Focus Trait (Optional)label
+                select 
+                  value={fillModal.focusTrait}
+                  onChange={e = setFillModal(prev = ({ ...prev, focusTrait e.target.value }))}
+                  className=w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-slate-200 focusborder-indigo-500 outline-none
+                  disabled={isCalculating}
+                
+                  option value=🔮 Balanced (Best Fit)option
+                  {Object.keys(MOCK_TRAITS).sort().map(t = (
+                    option key={t} value={t}{t}option
+                  ))}
+                select
+                p className=text-[10px] text-slate-500 mt-1The engine will heavily prioritize this trait, while optimizing the rest of the board around it.p
+              div
+            div
+
+            button 
+              onClick={() = handleAutoFill(fillModal.boardId, fillModal.focusTrait, fillModal.targetSize)}
+              disabled={isCalculating}
+              className=w-full py-2.5 bg-indigo-600 hoverbg-indigo-500 disabledbg-slate-700 disabledtext-slate-500 text-white rounded font-bold transition-colors flex items-center justify-center gap-2
+            
+              {isCalculating  (
+                Loader2 size={18} className=animate-spin  Analyzing 100,000+ paths...
+              )  (
+                Wand2 size={18}  Generate Optimal Comp
+              )}
+            button
+          div
+        div
+      )}
+    div
+  );
+}
