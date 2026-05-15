@@ -4,6 +4,7 @@ import { getTierColor, getBoardTraitCounts, getSynergies, getSuggestions, getCos
 
 const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, onClose, canClose, onAddDirect, onStrategyChange, onAddEmblem, onRemoveEmblem, onTraitClick, onOpenFill, onExport, onUpdateUnitTrait, allChampions = [], allTraits = {} }) => {
   const [hoveredTrait, setHoveredTrait] = useState(null);
+  const [hoveredChampInstanceId, setHoveredChampInstanceId] = useState(null);
   const [showMoreActions, setShowMoreActions] = useState(false);
   const synergies = useMemo(() => getSynergies(board.units, board.emblems, allTraits), [board.units, board.emblems, allTraits]);
   const suggestedChampions = useMemo(() => getSuggestions(board.units, board.emblems, board.strategy, allChampions, allTraits), [board.units, board.emblems, board.strategy, allChampions, allTraits]);
@@ -21,6 +22,15 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
   }, [board.units]);
 
   const currentTraitCounts = useMemo(() => getBoardTraitCounts(board.units, board.emblems), [board.units, board.emblems]);
+
+  const hoveredChampTraits = useMemo(() => {
+    if (!hoveredChampInstanceId) return new Set();
+    const champ = board.units.find(u => u.instanceId === hoveredChampInstanceId);
+    if (!champ) return new Set();
+    const ts = new Set([...champ.traits]);
+    if (champ.selectedTrait) ts.add(champ.selectedTrait);
+    return ts;
+  }, [hoveredChampInstanceId, board.units]);
 
   const costOverview = (
     <div className="flex items-center gap-1">
@@ -167,13 +177,14 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
           <div className="flex flex-wrap gap-2">
             {synergies.filter(s => !(s.levels.length === 1 && s.levels[0] === 1)).map(syn => {
               const progress = syn.nextLevel ? `${syn.count}/${syn.nextLevel}` : `${syn.count}/${syn.activeLevel}`;
+              const isHighlighted = hoveredTrait === syn.name || hoveredChampTraits.has(syn.name);
               return (
                 <div 
                   key={syn.name} 
                   onMouseEnter={() => setHoveredTrait(syn.name)}
                   onMouseLeave={() => setHoveredTrait(null)}
                   onClick={(e) => { e.stopPropagation(); onTraitClick(board.id, syn.name); }}
-                  className={`px-2.5 py-1 rounded text-sm border flex items-center gap-2 transition-all cursor-pointer hover:brightness-125 ${getTierColor(syn.tier)} ${hoveredTrait === syn.name ? 'scale-110 shadow-lg z-10 ring-1 ring-white/50' : ''}`}
+                  className={`px-2.5 py-1 rounded text-sm border flex items-center gap-2 transition-all cursor-pointer hover:brightness-125 ${getTierColor(syn.tier)} ${isHighlighted ? 'scale-110 shadow-lg z-10 ring-1 ring-white/50 brightness-125' : ''}`}
                 >
                   <span className="font-bold">{syn.name}</span>
                   <span className="bg-black/20 px-1.5 rounded font-mono text-xs tracking-wider">{progress}</span>
@@ -186,17 +197,20 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
         {/* Unique Traits */}
         {synergies.filter(s => s.levels.length === 1 && s.levels[0] === 1).length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-700/50">
-            {synergies.filter(s => s.levels.length === 1 && s.levels[0] === 1).map(syn => (
-              <div 
-                key={syn.name} 
-                onMouseEnter={() => setHoveredTrait(syn.name)}
-                onMouseLeave={() => setHoveredTrait(null)}
-                onClick={(e) => { e.stopPropagation(); onTraitClick(board.id, syn.name); }}
-                className={`px-2 py-0.5 rounded text-[11px] border flex items-center gap-1.5 transition-all cursor-pointer hover:brightness-125 ${getTierColor(syn.tier)} ${hoveredTrait === syn.name ? 'scale-110 shadow-lg z-10 ring-1 ring-white/50' : ''}`}
-              >
-                <span className="font-bold">{syn.name}</span>
-              </div>
-            ))}
+            {synergies.filter(s => s.levels.length === 1 && s.levels[0] === 1).map(syn => {
+              const isHighlighted = hoveredTrait === syn.name || hoveredChampTraits.has(syn.name);
+              return (
+                <div 
+                  key={syn.name} 
+                  onMouseEnter={() => setHoveredTrait(syn.name)}
+                  onMouseLeave={() => setHoveredTrait(null)}
+                  onClick={(e) => { e.stopPropagation(); onTraitClick(board.id, syn.name); }}
+                  className={`px-2 py-0.5 rounded text-[11px] border flex items-center gap-1.5 transition-all cursor-pointer hover:brightness-125 ${getTierColor(syn.tier)} ${isHighlighted ? 'scale-110 shadow-lg z-10 ring-1 ring-white/50 brightness-125' : ''}`}
+                >
+                  <span className="font-bold">{syn.name}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -248,6 +262,8 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
           return (
             <div 
               key={idx} 
+              onMouseEnter={() => champ && setHoveredChampInstanceId(champ.instanceId)}
+              onMouseLeave={() => setHoveredChampInstanceId(null)}
               onClick={(e) => {
                  if (champ) {
                    e.stopPropagation();
