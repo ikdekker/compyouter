@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { X, ShieldPlus, RefreshCcw, Star, Wand2, Lightbulb, GitBranch, Copy, MoreHorizontal } from 'lucide-react';
+import { X, ShieldPlus, RefreshCcw, Star, Wand2, Lightbulb, GitBranch, Copy, MoreHorizontal, Anchor, TrendingUp } from 'lucide-react';
 import { getTierColor, getBoardTraitCounts, getSynergies, getSuggestions, getCostColor } from '../utils/helpers';
 
-const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, onClose, canClose, onAddDirect, onStrategyChange, onAddEmblem, onRemoveEmblem, onTraitClick, onOpenFill, onExport, onUpdateUnitTrait, allChampions = [], allTraits = {} }) => {
+const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, onClose, canClose, onAddDirect, onStrategyChange, onAddEmblem, onRemoveEmblem, onTraitClick, onOpenFill, onExport, onUpdateUnitTrait, onUpdateUnitStatus, onQuickShift, allChampions = [], allTraits = {} }) => {
   const [hoveredTrait, setHoveredTrait] = useState(null);
   const [hoveredChampInstanceId, setHoveredChampInstanceId] = useState(null);
   const [showMoreActions, setShowMoreActions] = useState(false);
@@ -45,7 +45,7 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
   return (
     <div 
       onClick={() => onFocus(board.id)}
-      className={`flex-1 min-w-[360px] bg-slate-800 rounded-lg shadow-xl p-4 flex flex-col border-2 transition-all ${
+      className={`flex-1 min-w-[380px] bg-slate-800 rounded-lg shadow-xl p-4 flex flex-col border-2 transition-all ${
         isActive ? 'border-blue-500 shadow-blue-900/20' : 'border-slate-700 opacity-60 hover:opacity-100 cursor-pointer'
       }`}
     >
@@ -57,11 +57,23 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
              <span className="bg-slate-700 px-2 py-0.5 rounded text-xs font-semibold text-slate-300 shrink-0">
                {board.units.length} / 10
              </span>
+             <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded border border-slate-700 ml-auto md:ml-2">
+                <span className="text-[9px] font-black text-slate-500 uppercase px-1">Shift:</span>
+                {[5, 6, 8].map(lvl => (
+                  <button
+                    key={lvl}
+                    onClick={(e) => { e.stopPropagation(); onQuickShift(board.id, lvl); }}
+                    className="px-2 py-0.5 bg-slate-800 hover:bg-indigo-600 rounded text-[10px] font-black text-slate-300 hover:text-white transition-colors"
+                  >
+                    L{lvl}
+                  </button>
+                ))}
+             </div>
              <select 
                value={board.strategy || 'standard'} 
                onChange={(e) => onStrategyChange(board.id, e.target.value)}
                onClick={(e) => e.stopPropagation()}
-               className="bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-slate-700 shrink-0 ml-auto"
+               className="bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-slate-700 shrink-0 ml-2"
                title="Roll Strategy"
              >
                <option value="standard">Flex / Standard</option>
@@ -272,15 +284,25 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
               }}
               className={`h-20 md:h-24 rounded-lg border-2 flex flex-col items-center justify-center p-1.5 relative transition-all duration-300 ${
                 champ ? 
-                   `bg-slate-800 ${getCostColor(champ.cost)} cursor-pointer hover:bg-red-900/40 hover:border-red-500 group ${highlightClass || 'hover:opacity-80'}` : 
+                   `bg-slate-800 ${getCostColor(champ.cost)} cursor-pointer hover:bg-red-900/40 hover:border-red-500 group ${highlightClass || (champ.isCore ? 'ring-2 ring-yellow-500/50 scale-[1.02]' : 'hover:opacity-80')}` : 
                    'border-slate-700 border-dashed bg-slate-800/50 text-slate-600'
               }`}
             >
               {champ ? (
                 <>
                   <div className="absolute -top-2.5 -right-2.5 flex items-center shadow-lg z-10 scale-100 origin-top-right">
-                    {(isSwapout || matchedCount > 0) && (
-                      <>
+                    {(isSwapout || matchedCount > 0 || champ.isCore) && (
+                      <div className="flex gap-0.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateUnitStatus(board.id, champ.instanceId, !champ.isCore);
+                          }}
+                          className={`p-1 border-2 rounded-full flex items-center justify-center h-[26px] w-[26px] shadow-lg transition-all hover:scale-110 ${champ.isCore ? 'bg-yellow-500 text-yellow-950 border-yellow-700 opacity-100' : 'bg-slate-700 text-slate-400 border-slate-600 opacity-0 group-hover:opacity-100'}`}
+                          title={champ.isCore ? "Mark as Holder" : "Mark as Core Unit"}
+                        >
+                          <Anchor size={14} strokeWidth={3} />
+                        </button>
                         {matchedCount > 0 && (
                           <div title={isSwapout ? `${matchedCount} trait(s) matched but no thresholds reached.` : `${matchedCount} trait(s) matching and providing essential thresholds!`} className={`${isSwapout ? 'bg-amber-500 text-amber-950 border-amber-700' : 'bg-emerald-500 text-emerald-950 border-emerald-700'} px-2 py-[4px] text-xs font-black rounded-l-full border-2 border-r-0 flex items-center h-[26px]`}>
                             {matchedCount}
@@ -289,12 +311,15 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
                         <div title={isSwapout ? "Suggested Swap: This unit provides no active synergy thresholds." : "Core Unit: Provides active synergy thresholds."} className={`${isSwapout ? 'bg-amber-600 border-amber-800' : 'bg-emerald-600 border-emerald-800'} text-white p-1 border-2 flex items-center justify-center h-[26px] w-[26px] ${matchedCount > 0 ? 'rounded-r-full' : 'rounded-full'}`}>
                           {isSwapout ? <RefreshCcw size={14} strokeWidth={3} /> : <Star size={12} strokeWidth={3} fill="currentColor" />}
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
 
                   <div className="flex flex-col items-center justify-center w-full h-full text-center overflow-hidden">
-                    <span className="font-bold text-xs md:text-sm leading-tight truncate w-full px-0.5 text-white mb-0.5">{champ.name}</span>
+                    <span className="font-bold text-xs md:text-sm leading-tight truncate w-full px-0.5 text-white mb-0.5 flex items-center justify-center gap-1">
+                      {champ.isCore && <Anchor size={10} className="text-yellow-500 shrink-0" />}
+                      {champ.name}
+                    </span>
                     <div className="flex flex-wrap justify-center gap-1 w-full px-0.5">
                        {champ.traits.map(t => {
                          let traitColor = 'text-slate-400';

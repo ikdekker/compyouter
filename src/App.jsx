@@ -44,12 +44,47 @@ export default function App() {
         const newUnit = { 
           ...champion, 
           instanceId: Math.random().toString(36).substr(2, 9),
-          selectedTrait: champion.selectableTraits ? champion.selectableTraits[0] : undefined
+          selectedTrait: champion.selectableTraits ? champion.selectableTraits[0] : undefined,
+          isCore: false
         };
         return { ...b, units: [...b.units, newUnit] };
       }
       return b;
     }));
+  };
+
+  const handleUpdateUnitStatus = (boardId, instanceId, isCore) => {
+    setBoards(prev => prev.map(b => {
+      if (b.id === boardId) {
+        return {
+          ...b,
+          units: b.units.map(u => u.instanceId === instanceId ? { ...u, isCore } : u)
+        };
+      }
+      return b;
+    }));
+  };
+
+  const handleQuickShift = (boardId, targetLevel) => {
+    const sourceBoard = boards.find(b => b.id === boardId);
+    const newId = Math.random().toString(36).substr(2, 9);
+    
+    // In a quick shift, we branch and immediately open the fill modal
+    const newBoard = {
+      id: newId,
+      name: `Transition Lvl ${targetLevel}`,
+      units: [...sourceBoard.units.map(u => ({ ...u, instanceId: Math.random().toString(36).substr(2, 9) }))],
+      strategy: sourceBoard.strategy,
+      emblems: [...(sourceBoard.emblems || [])]
+    };
+    
+    setBoards(prev => [...prev, newBoard]);
+    setActiveBoardId(newId);
+    
+    // Pre-open the fill modal for the new board
+    setTimeout(() => {
+       setFillModal({ boardId: newId, focusTrait: '', targetSize: targetLevel, excludeUnique: false });
+    }, 100);
   };
 
   const handleUpdateUnitTrait = (boardId, instanceId, trait) => {
@@ -294,6 +329,8 @@ export default function App() {
               }}
               onExport={handleExportBoard}
               onUpdateUnitTrait={handleUpdateUnitTrait}
+              onUpdateUnitStatus={handleUpdateUnitStatus}
+              onQuickShift={handleQuickShift}
               allChampions={allChampions}
               allTraits={allTraits}
             />
