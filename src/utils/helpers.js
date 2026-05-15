@@ -141,7 +141,7 @@ export const getSuggestions = (units, emblems = [], strategy = 'standard', allCh
                 if (activeLvl > 0) activeNonUniqueLevels++;
               }
             }
-            if (activeNonUniqueLevels >= 3) {
+            if (activeNonUniqueLevels >= 5) {
               score += activeNonUniqueLevels * 40;
               reasons.push({ trait, type: 'complete', text: `Enhances ${activeNonUniqueLevels} active traits` });
             }

@@ -196,7 +196,7 @@ export default function App() {
               }
 
               // Redeemer Bonus: Scale with active non-unique traits (situational)
-              if (counts['Redeemer'] > 0 && activeNonUniqueLevels >= 3) {
+              if (counts['Redeemer'] > 0 && activeNonUniqueLevels >= 5) {
                 score += activeNonUniqueLevels * 100;
               }
 
