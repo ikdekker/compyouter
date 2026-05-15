@@ -94,6 +94,7 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
          </div>
          
          <div className="flex items-center gap-2 ml-2 shrink-0">
+           {/* Desktop Action Buttons - Hidden on mobile */}
            <div className="hidden md:flex items-center gap-2">
              <button onClick={(e) => { e.stopPropagation(); onExport(board.id); }} className="p-1.5 bg-green-900/60 border border-green-500/50 hover:bg-green-600 hover:border-green-400 rounded text-green-300 hover:text-white shrink-0 shadow-lg transition-all active:scale-95" title="Copy Board Code">
                <Copy size={16} />
@@ -101,9 +102,18 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
              <button onClick={(e) => { e.stopPropagation(); onOpenFill(board.id); }} className="p-1.5 bg-indigo-900/60 border border-indigo-500/50 hover:bg-indigo-600 hover:border-indigo-400 rounded text-indigo-300 hover:text-white shrink-0 flex items-center gap-1 shadow-lg transition-all active:scale-95" title="Engine Analysis Auto-Fill">
                <Wand2 size={16} />
              </button>
+             <button onClick={(e) => { e.stopPropagation(); onBranch(board.id); }} className="p-1.5 bg-slate-700 hover:bg-blue-600 rounded text-slate-300 hover:text-white shrink-0 shadow-lg transition-all active:scale-95" title="Branch this path">
+               <GitBranch size={16} />
+             </button>
+             {canClose && (
+               <button onClick={(e) => { e.stopPropagation(); onClose(board.id); }} className="p-1.5 bg-slate-700 hover:bg-red-600 rounded text-slate-300 hover:text-white shrink-0 shadow-lg transition-all active:scale-95" title="Close path">
+                 <X size={16} />
+               </button>
+             )}
            </div>
            
-           <div className="relative">
+           {/* Mobile Action Menu Trigger - Hidden on desktop */}
+           <div className="relative md:hidden">
              <button 
                onClick={(e) => { e.stopPropagation(); setShowMoreActions(!showMoreActions); }}
                className={`p-1.5 rounded text-slate-300 hover:text-white shrink-0 transition-all shadow-lg active:scale-95 ${showMoreActions ? 'bg-blue-600 text-white ring-2 ring-blue-400' : 'bg-slate-700 hover:bg-slate-600'}`}
@@ -116,34 +126,32 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
                <>
                  <div className="fixed inset-0 z-40 cursor-default" onClick={(e) => { e.stopPropagation(); setShowMoreActions(false); }} />
                  <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                   <div className="md:hidden">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onExport(board.id); setShowMoreActions(false); }}
+                      className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-green-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
+                    >
+                      <Copy size={16} className="text-green-400" /> Copy Team Code
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onOpenFill(board.id); setShowMoreActions(false); }}
+                      className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-indigo-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
+                    >
+                      <Wand2 size={16} className="text-indigo-400" /> Engine Auto-Fill
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onBranch(board.id); setShowMoreActions(false); }}
+                      className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-blue-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
+                    >
+                      <GitBranch size={16} className="text-blue-400" /> Branch this Path
+                    </button>
+                    {canClose && (
                       <button 
-                        onClick={(e) => { e.stopPropagation(); onExport(board.id); setShowMoreActions(false); }}
-                        className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-green-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
+                        onClick={(e) => { e.stopPropagation(); onClose(board.id); setShowMoreActions(false); }}
+                        className="w-full px-4 py-3 text-left text-sm font-bold text-red-400 hover:bg-red-600 hover:text-white flex items-center gap-3 transition-colors"
                       >
-                        <Copy size={16} className="text-green-400" /> Copy Team Code
+                        <X size={16} /> Close Path
                       </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); onOpenFill(board.id); setShowMoreActions(false); }}
-                        className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-indigo-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
-                      >
-                        <Wand2 size={16} className="text-indigo-400" /> Engine Auto-Fill
-                      </button>
-                   </div>
-                   <button 
-                     onClick={(e) => { e.stopPropagation(); onBranch(board.id); setShowMoreActions(false); }}
-                     className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-blue-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
-                   >
-                     <GitBranch size={16} className="text-blue-400" /> Branch this Path
-                   </button>
-                   {canClose && (
-                     <button 
-                       onClick={(e) => { e.stopPropagation(); onClose(board.id); setShowMoreActions(false); }}
-                       className="w-full px-4 py-3 text-left text-sm font-bold text-red-400 hover:bg-red-600 hover:text-white flex items-center gap-3 transition-colors"
-                     >
-                       <X size={16} /> Close Path
-                     </button>
-                   )}
+                    )}
                  </div>
                </>
              )}
