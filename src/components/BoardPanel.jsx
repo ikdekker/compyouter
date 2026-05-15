@@ -25,7 +25,7 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
   const costOverview = (
     <div className="flex items-center gap-1">
       {[1, 2, 3, 4, 5].map(cost => (
-        <div key={cost} className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-black border ${getCostColor(cost).replace('text-', 'border-').replace('border-', 'border-')} ${costCounts[cost] > 0 ? 'bg-slate-700 text-white' : 'bg-slate-900/40 text-slate-600 border-slate-800'}`}>
+        <div key={cost} className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-black border ${getCostColor(cost).replace('text-', 'border-').replace('border-', 'border-')} ${costCounts[cost] > 0 ? 'bg-slate-700 text-white shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800'}`}>
           <span className="opacity-70">$</span>{cost}: {costCounts[cost]}
         </div>
       ))}
@@ -40,21 +40,18 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
       }`}
     >
       <div className="flex justify-between items-start mb-4 border-b border-slate-700 pb-3 relative">
-         <div className="flex flex-col gap-1.5 w-full">
+         <div className="flex flex-col gap-1.5 w-full overflow-hidden">
            <div className="flex items-center gap-3">
              <div className={`w-3 h-3 rounded-full shrink-0 ${isActive ? 'bg-blue-500 animate-pulse' : 'bg-slate-600'}`} />
              <span className="font-bold text-lg text-slate-200 truncate">{board.name}</span>
              <span className="bg-slate-700 px-2 py-0.5 rounded text-xs font-semibold text-slate-300 shrink-0">
                {board.units.length} / 10
              </span>
-             <div className="hidden lg:block">
-               {costOverview}
-             </div>
              <select 
                value={board.strategy || 'standard'} 
                onChange={(e) => onStrategyChange(board.id, e.target.value)}
                onClick={(e) => e.stopPropagation()}
-               className="bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-slate-700 shrink-0 ml-auto md:ml-0"
+               className="bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-slate-700 shrink-0 ml-auto"
                title="Roll Strategy"
              >
                <option value="standard">Flex / Standard</option>
@@ -64,11 +61,21 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
                <option value="hyper1">Hyper Roll (1-Cost)</option>
              </select>
            </div>
-           <div className="text-xs text-slate-400 flex items-center flex-wrap gap-2 pl-6">
-             <span>Active Traits:</span>
-             <span className="bg-slate-700/50 px-1.5 rounded text-slate-300"><strong className="text-white">{nonUniqueCount}</strong> Non-Unique</span>
-             <span className="bg-slate-700/50 px-1.5 rounded text-slate-300"><strong className="text-white">{uniqueCount}</strong> Unique</span>
+           
+           <div className="text-xs text-slate-400 flex items-center flex-wrap gap-x-4 gap-y-2 pl-6">
+             <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-1 rounded-md border border-slate-700/50">
+               <span className="text-[10px] uppercase font-bold text-slate-500 mr-1">Traits:</span>
+               <span className="text-slate-300"><strong className="text-white">{nonUniqueCount}</strong> Standard</span>
+               <span className="w-[1px] h-3 bg-slate-700 mx-1" />
+               <span className="text-slate-300"><strong className="text-white">{uniqueCount}</strong> Unique</span>
+             </div>
+             
+             <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-1 rounded-md border border-slate-700/50">
+                <span className="text-[10px] uppercase font-bold text-slate-500 mr-1">Pool:</span>
+                {costOverview}
+             </div>
            </div>
+
            <div className="flex flex-wrap items-center gap-1.5 pl-6 mt-1">
              <button onClick={(e) => { e.stopPropagation(); onAddEmblem(board.id); }} className="px-2 py-0.5 rounded text-[10px] uppercase font-bold border border-yellow-600 bg-yellow-900/40 text-yellow-400 hover:bg-yellow-500 hover:text-slate-900 transition-colors flex items-center gap-1">
                <ShieldPlus size={12} /> Add Emblem
@@ -86,63 +93,59 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
            </div>
          </div>
          
-         <div className="flex items-center gap-2 ml-2">
-           {/* Standard Action Buttons - Hidden on small screens */}
+         <div className="flex items-center gap-2 ml-2 shrink-0">
            <div className="hidden md:flex items-center gap-2">
-             <button onClick={(e) => { e.stopPropagation(); onExport(board.id); }} className="p-1.5 bg-green-900/60 border border-green-500/50 hover:bg-green-600 hover:border-green-400 rounded text-green-300 hover:text-white shrink-0" title="Copy Board Code">
+             <button onClick={(e) => { e.stopPropagation(); onExport(board.id); }} className="p-1.5 bg-green-900/60 border border-green-500/50 hover:bg-green-600 hover:border-green-400 rounded text-green-300 hover:text-white shrink-0 shadow-lg transition-all active:scale-95" title="Copy Board Code">
                <Copy size={16} />
              </button>
-             <button onClick={(e) => { e.stopPropagation(); onOpenFill(board.id); }} className="p-1.5 bg-indigo-900/60 border border-indigo-500/50 hover:bg-indigo-600 hover:border-indigo-400 rounded text-indigo-300 hover:text-white shrink-0 flex items-center gap-1 transition-all" title="Engine Analysis Auto-Fill">
+             <button onClick={(e) => { e.stopPropagation(); onOpenFill(board.id); }} className="p-1.5 bg-indigo-900/60 border border-indigo-500/50 hover:bg-indigo-600 hover:border-indigo-400 rounded text-indigo-300 hover:text-white shrink-0 flex items-center gap-1 shadow-lg transition-all active:scale-95" title="Engine Analysis Auto-Fill">
                <Wand2 size={16} />
              </button>
-             <button onClick={(e) => { e.stopPropagation(); onBranch(board.id); }} className="p-1.5 bg-slate-700 hover:bg-blue-600 rounded text-slate-300 hover:text-white shrink-0" title="Branch this path">
-               <GitBranch size={16} />
-             </button>
-             {canClose && (
-               <button onClick={(e) => { e.stopPropagation(); onClose(board.id); }} className="p-1.5 bg-slate-700 hover:bg-red-600 rounded text-slate-300 hover:text-white shrink-0" title="Close path">
-                 <X size={16} />
-               </button>
-             )}
            </div>
-
-           {/* Mobile Actions Menu */}
-           <div className="md:hidden relative">
+           
+           <div className="relative">
              <button 
                onClick={(e) => { e.stopPropagation(); setShowMoreActions(!showMoreActions); }}
-               className="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-slate-300 hover:text-white shrink-0"
+               className={`p-1.5 rounded text-slate-300 hover:text-white shrink-0 transition-all shadow-lg active:scale-95 ${showMoreActions ? 'bg-blue-600 text-white ring-2 ring-blue-400' : 'bg-slate-700 hover:bg-slate-600'}`}
+               title="More Actions"
              >
                <MoreHorizontal size={20} />
              </button>
              
              {showMoreActions && (
-               <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                 <button 
-                   onClick={(e) => { e.stopPropagation(); onExport(board.id); setShowMoreActions(false); }}
-                   className="w-full px-4 py-2 text-left text-sm font-bold text-slate-200 hover:bg-green-600 flex items-center gap-2 border-b border-slate-700"
-                 >
-                   <Copy size={14} /> Copy Code
-                 </button>
-                 <button 
-                   onClick={(e) => { e.stopPropagation(); onOpenFill(board.id); setShowMoreActions(false); }}
-                   className="w-full px-4 py-2 text-left text-sm font-bold text-slate-200 hover:bg-indigo-600 flex items-center gap-2 border-b border-slate-700"
-                 >
-                   <Wand2 size={14} /> Engine Fill
-                 </button>
-                 <button 
-                   onClick={(e) => { e.stopPropagation(); onBranch(board.id); setShowMoreActions(false); }}
-                   className="w-full px-4 py-2 text-left text-sm font-bold text-slate-200 hover:bg-blue-600 flex items-center gap-2 border-b border-slate-700"
-                 >
-                   <GitBranch size={14} /> Branch Path
-                 </button>
-                 {canClose && (
+               <>
+                 <div className="fixed inset-0 z-40 cursor-default" onClick={(e) => { e.stopPropagation(); setShowMoreActions(false); }} />
+                 <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                   <div className="md:hidden">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onExport(board.id); setShowMoreActions(false); }}
+                        className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-green-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
+                      >
+                        <Copy size={16} className="text-green-400" /> Copy Team Code
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onOpenFill(board.id); setShowMoreActions(false); }}
+                        className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-indigo-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
+                      >
+                        <Wand2 size={16} className="text-indigo-400" /> Engine Auto-Fill
+                      </button>
+                   </div>
                    <button 
-                     onClick={(e) => { e.stopPropagation(); onClose(board.id); setShowMoreActions(false); }}
-                     className="w-full px-4 py-2 text-left text-sm font-bold text-red-400 hover:bg-red-600 hover:text-white flex items-center gap-2"
+                     onClick={(e) => { e.stopPropagation(); onBranch(board.id); setShowMoreActions(false); }}
+                     className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-blue-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
                    >
-                     <X size={14} /> Close Path
+                     <GitBranch size={16} className="text-blue-400" /> Branch this Path
                    </button>
-                 )}
-               </div>
+                   {canClose && (
+                     <button 
+                       onClick={(e) => { e.stopPropagation(); onClose(board.id); setShowMoreActions(false); }}
+                       className="w-full px-4 py-3 text-left text-sm font-bold text-red-400 hover:bg-red-600 hover:text-white flex items-center gap-3 transition-colors"
+                     >
+                       <X size={16} /> Close Path
+                     </button>
+                   )}
+                 </div>
+               </>
              )}
            </div>
          </div>
@@ -151,13 +154,7 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
       <div className="flex flex-col gap-3 mb-4 min-h-[40px]">
         {synergies.length === 0 && <span className="text-slate-500 text-sm italic">Add units to see traits...</span>}
         
-        {/* Cost Overview (Small screens) */}
-        <div className="lg:hidden mb-1">
-          {costOverview}
-        </div>
-
         {/* Non-Unique Traits */}
-...
         {synergies.filter(s => !(s.levels.length === 1 && s.levels[0] === 1)).length > 0 && (
           <div className="flex flex-wrap gap-2">
             {synergies.filter(s => !(s.levels.length === 1 && s.levels[0] === 1)).map(syn => {
