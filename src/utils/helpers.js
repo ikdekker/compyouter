@@ -1,4 +1,4 @@
-import { MOCK_TRAITS, MOCK_CHAMPIONS } from '../data/tftData';
+import { MOCK_TRAITS, MOCK_CHAMPIONS } from '../data/tftData.js';
 
 export const getTierColor = (tier) => {
   switch(tier) {
@@ -44,12 +44,12 @@ export const getBoardTraitCounts = (units, emblems = []) => {
   return counts;
 };
 
-export const getSynergies = (units, emblems = []) => {
+export const getSynergies = (units, emblems = [], allTraits = MOCK_TRAITS) => {
   const counts = getBoardTraitCounts(units, emblems);
   const activeSynergies = [];
 
   for (const [trait, count] of Object.entries(counts)) {
-    const traitInfo = MOCK_TRAITS[trait];
+    const traitInfo = allTraits[trait];
     if (!traitInfo) continue;
 
     let activeLevel = 0;
@@ -85,12 +85,12 @@ export const getSynergies = (units, emblems = []) => {
   });
 };
 
-export const getSuggestions = (units, emblems = [], strategy = 'standard') => {
+export const getSuggestions = (units, emblems = [], strategy = 'standard', allChampions = MOCK_CHAMPIONS, allTraits = MOCK_TRAITS) => {
   if (units.length === 0 || units.length >= 10) return [];
   const counts = getBoardTraitCounts(units, emblems);
   const uniqueChampions = new Set(units.map(u => u.name));
 
-  const scored = MOCK_CHAMPIONS
+  const scored = allChampions
     .filter(champ => !uniqueChampions.has(champ.name))
     .map(champ => {
       let bestScore = 0;
@@ -108,7 +108,7 @@ export const getSuggestions = (units, emblems = [], strategy = 'standard') => {
         }
 
         traits.forEach(trait => {
-          const traitInfo = MOCK_TRAITS[trait];
+          const traitInfo = allTraits[trait];
           if (!traitInfo) return;
 
           const currentCount = counts[trait] || 0;
@@ -127,6 +127,23 @@ export const getSuggestions = (units, emblems = [], strategy = 'standard') => {
             } else {
                if (traitInfo.levels[0] === 1) score += 15; 
                else score += 2; 
+            }
+          }
+
+          // Special logic for Redeemer (Rhaast)
+          if (trait === 'Redeemer') {
+            let activeNonUniqueLevels = 0;
+            for (const [t, count] of Object.entries(counts)) {
+              const info = allTraits[t];
+              if (info && !(info.levels.length === 1 && info.levels[0] === 1)) {
+                let activeLvl = 0;
+                info.levels.forEach(l => { if (count >= l) activeLvl = l; });
+                if (activeLvl > 0) activeNonUniqueLevels++;
+              }
+            }
+            if (activeNonUniqueLevels > 0) {
+              score += activeNonUniqueLevels * 150;
+              reasons.push({ trait, type: 'complete', text: `Enhances ${activeNonUniqueLevels} active trait(s)` });
             }
           }
         });
@@ -153,78 +170,128 @@ export const getSuggestions = (units, emblems = [], strategy = 'standard') => {
   return scored.slice(0, 6);
 };
 
-export const getSortedChampionList = () => {
-  return [...MOCK_CHAMPIONS].sort((a, b) => a.name.localeCompare(b.name));
+export const getSortedChampionList = (champions = MOCK_CHAMPIONS) => {
+  return [...champions]; // Champions are now expected to be pre-sorted from the API
 };
 
-export const exportBoardToCode = (board) => {
-  const sortedChamps = getSortedChampionList();
-  const prefix = "01";
-  const suffix = "TFTSet13";
-  
-  // Get unique champion names on board (Team Planner only cares about identity)
-  const boardChampNames = Array.from(new Set(board.units.map(u => u.name)));
-  
+export const exportBoardToCode = (board, allChampions = MOCK_CHAMPIONS) => {
+  const sortedChamps = allChampions; // Champions are already sorted alphabetically by character_id
+
+  const prefix = "01"; // Always export in the latest official '01' format
+  const suffix = "TFTSet17";
+
   let hexBody = "";
+  // Iterate up to 10 board slots
   for (let i = 0; i < 10; i++) {
-    if (i < boardChampNames.length) {
-      const champIndex = sortedChamps.findIndex(c => c.name === boardChampNames[i]);
+    const unit = board.units[i]; // Get unit at this board position
+
+    if (unit) {
+      // Find the 1-based index of the champion in the alphabetically sorted list
+      const champIndex = sortedChamps.findIndex(c => c.id === unit.id);
       if (champIndex !== -1) {
-        // 1-based index in hex
-        const hexId = (champIndex + 1).toString(16).padStart(2, '0').toUpperCase();
-        hexBody += hexId;
+        // Convert to 1-based index to 2-char hex
+        const champHexId = (champIndex + 1).toString(16).padStart(2, '0').toLowerCase();
+        hexBody += champHexId;
       } else {
-        hexBody += "00";
+        hexBody += "00"; // Champion not found or empty slot
       }
     } else {
-      hexBody += "00";
+      hexBody += "00"; // Empty slot
     }
   }
-  
+
   return `${prefix}${hexBody}${suffix}`;
 };
 
-export const importBoardFromCode = (code) => {
+export const importBoardFromCode = (code, allChampions = MOCK_CHAMPIONS) => {
   try {
-    // Official format: 01 + (10 * 2 hex) + TFTSet13
-    if (!code.startsWith("01") || !code.includes("TFTSet13")) {
-      // Fallback to old Base64 format if someone is still using it
-      const data = JSON.parse(atob(code));
-      return {
-        id: Math.random().toString(36).substr(2, 9),
-        name: data.n || 'Imported Board',
-        strategy: data.s || 'standard',
-        emblems: data.e || [],
-        units: (data.u || []).map(u => {
-          const base = MOCK_CHAMPIONS.find(c => c.id === u.id);
-          if (!base) return null;
-          return {
-            ...base,
-            instanceId: Math.random().toString(36).substr(2, 9),
-            selectedTrait: u.t
-          };
-        }).filter(u => u !== null)
-      };
-    }
-
-    const sortedChamps = getSortedChampionList();
-    const hexPart = code.substring(2, 22);
-    const units = [];
+    const cleanCode = (code || "").trim();
+    const isOfficial = cleanCode.startsWith("01");
+    const isV2 = cleanCode.startsWith("02");
     
-    for (let i = 0; i < 10; i++) {
-      const hexId = hexPart.substring(i * 2, i * 2 + 2);
-      if (hexId === "00") continue;
-      
-      const index = parseInt(hexId, 16) - 1;
-      if (index >= 0 && index < sortedChamps.length) {
-        const champ = sortedChamps[index];
-        units.push({
-          ...champ,
-          instanceId: Math.random().toString(36).substr(2, 9),
-          selectedTrait: champ.selectableTraits ? champ.selectableTraits[0] : undefined
-        });
+    // Fallback to old Base64 format if no known prefix
+    if (!isOfficial && !isV2 && !/tftset/i.test(cleanCode)) {
+      try {
+        const data = JSON.parse(atob(cleanCode));
+        return {
+          id: Math.random().toString(36).substr(2, 9),
+          name: data.n || 'Imported Board',
+          strategy: data.s || 'standard',
+          emblems: data.e || [],
+          units: (data.u || []).map(u => {
+            const base = allChampions.find(c => c.id === u.id);
+            if (!base) return null;
+            return {
+              ...base,
+              instanceId: Math.random().toString(36).substr(2, 9),
+              selectedTrait: u.t,
+              position: 0 // Default position for old format
+            };
+          }).filter(u => u !== null).slice(0, 10)
+        };
+      } catch (e) {
+        return null;
       }
     }
+
+    if (isV2) {
+      console.error('Import of 02-prefixed team codes is not supported due to ambiguity in champion ID mapping.');
+      return null;
+    }
+
+    const sortedChamps = getSortedChampionList(allChampions); // Alphabetically sorted by character_id
+
+    // For '01' format, each unit is 2 hex chars for champion ID.
+    const charsPerUnit = 2; // Always 2 for '01' format now
+    const unitCount = 10;
+    const hexBodyLength = unitCount * charsPerUnit;
+    
+    // Determine the end of the hex part, considering a potential suffix like "TFTSet17"
+    let hexPartEndIndex = 2 + hexBodyLength;
+    const suffixMatch = cleanCode.substring(2 + hexBodyLength).match(/TFTSet\d+/i);
+    if (suffixMatch) {
+      hexPartEndIndex = cleanCode.indexOf(suffixMatch[0]);
+    }
+
+    const hexPart = cleanCode.substring(2, hexPartEndIndex);
+    const units = [];
+    
+    for (let i = 0; i < unitCount; i++) {
+      const unitHex = hexPart.substring(i * charsPerUnit, i * charsPerUnit + charsPerUnit);
+      if (!unitHex || unitHex.match(/^0+$/)) continue; // Continue if all zeros (empty slot)
+
+      let champ = null; // Declare champ here
+      let position = 0; // Default position for '01' or if not explicitly set for '02'
+
+      if (isV2) {
+        // Version 02: 3 hex chars = [Champion TPCode (2 chars)][Position (1 char)]
+        const champTpCodeHex = unitHex.substring(0, 2);
+        const positionHex = unitHex.substring(2, 3);
+        const teamPlannerCode = parseInt(champTpCodeHex, 16);
+        position = parseInt(positionHex, 16);
+        champ = allChampions.find(c => c.teamPlannerCode === teamPlannerCode);
+      } else {
+        // Version 01: 2 hex chars = [Champion 1-based alphabetical index (2 chars)]
+        const championIndex = parseInt(unitHex, 16);
+        if (championIndex >= 1 && championIndex <= sortedChamps.length) {
+          champ = sortedChamps[championIndex - 1];
+        }
+      }
+
+      if (champ) {
+        // Avoid duplicates in imported list based on champion ID
+        if (!units.some(u => u.id === champ.id)) {
+          units.push({
+            ...champ,
+            instanceId: Math.random().toString(36).substr(2, 9),
+            selectedTrait: champ.selectableTraits ? champ.selectableTraits[0] : undefined,
+            position: position // Store the parsed position
+          });
+        }
+      }
+    }
+
+    if (units.length === 0) return null;
 
     return {
       id: Math.random().toString(36).substr(2, 9),
@@ -238,4 +305,3 @@ export const importBoardFromCode = (code) => {
     return null;
   }
 };
-

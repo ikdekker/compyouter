@@ -1,19 +1,42 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Users, X, ShieldPlus, Wand2, Loader2, Share2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Users, X, ShieldPlus, Wand2, Loader2, Copy, MoreHorizontal, Download } from 'lucide-react';
 import BoardPanel from './components/BoardPanel';
 import { MOCK_TRAITS, MOCK_CHAMPIONS } from './data/tftData';
-import { getBoardTraitCounts, getCostColor, exportBoardToCode } from './utils/helpers';
+import { getBoardTraitCounts, getCostColor, exportBoardToCode, importBoardFromCode } from './utils/helpers';
+import { fetchLatestTftData } from './utils/riotApi';
 
 export default function App() {
+  const [allChampions, setAllChampions] = useState(MOCK_CHAMPIONS);
+  const [allTraits, setAllTraits] = useState(MOCK_TRAITS);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [boards, setBoards] = useState([
     { id: 'base', name: 'Main Path', units: [], strategy: 'standard', emblems: [] }
   ]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await fetchLatestTftData();
+      if (data) {
+        // If DDragon doesn't have traits, we keep the mock ones for now
+        // but we prioritize DDragon champions
+        setAllChampions(data.champions && data.champions.length > 0 ? data.champions : MOCK_CHAMPIONS);
+        if (data.traits && Object.keys(data.traits).length > 0) {
+          setAllTraits(data.traits);
+        }
+      }
+      setIsLoading(false);
+    };
+    loadData();
+  }, []);
+
   const [activeBoardId, setActiveBoardId] = useState('base');
   const [searchTerm, setSearchTerm] = useState('');
   const [emblemConfig, setEmblemConfig] = useState(null); 
   const [traitPopup, setTraitPopup] = useState(null);
   const [fillModal, setFillModal] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [selectedCost, setSelectedCost] = useState('all');
 
   const handleAddToBoard = (boardId, champion) => {
     setBoards(prev => prev.map(b => {
@@ -95,25 +118,29 @@ export default function App() {
 
   const handleExportBoard = (boardId) => {
     const board = boards.find(b => b.id === boardId);
-    const code = exportBoardToCode(board);
+    const code = exportBoardToCode(board, allChampions);
     navigator.clipboard.writeText(code);
     alert('Board code copied to clipboard!');
   };
 
   const filteredChampions = useMemo(() => {
-    return MOCK_CHAMPIONS
-      .filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                   c.traits.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                   (c.selectableTraits && c.selectableTraits.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))))
+    return allChampions
+      .filter(c => {
+        const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                             c.traits.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                             (c.selectableTraits && c.selectableTraits.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())));
+        const matchesCost = selectedCost === 'all' || c.cost === parseInt(selectedCost);
+        return matchesSearch && matchesCost;
+      })
       .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name));
-  }, [searchTerm]);
+  }, [searchTerm, selectedCost, allChampions]);
 
-  const craftableTraits = Object.entries(MOCK_TRAITS)
+  const craftableTraits = Object.entries(allTraits)
     .filter(([_, info]) => !(info.levels.length === 1 && info.levels[0] === 1))
     .map(([name]) => name)
     .sort();
 
-  const handleAutoFill = (boardId, focusTrait, targetSize) => {
+  const handleAutoFill = (boardId, focusTrait, targetSize, excludeUnique) => {
     setIsCalculating(true);
     
     setTimeout(() => {
@@ -126,14 +153,11 @@ export default function App() {
 
         for (let state of beam) {
           const existingNames = new Set(state.units.map(u => u.name));
-          const pool = MOCK_CHAMPIONS.filter(c => !existingNames.has(c.name));
+          const pool = allChampions.filter(c => !existingNames.has(c.name));
 
           for (let champ of pool) {
             const traits = [...champ.traits];
             let selectedTrait = undefined;
-            
-            // For auto-fill, we'd ideally pick the best trait, but for simplicity we'll just evaluate based on traits
-            // In helpers.getBoardTraitCounts, we'll need it to handle this.
             
             const newUnits = [...state.units, { ...champ, instanceId: Math.random().toString(36).substr(2, 9), selectedTrait }];
             const hash = newUnits.map(u => u.name).sort().join(',');
@@ -145,7 +169,7 @@ export default function App() {
               if (focusTrait) {
                 const focusCount = counts[focusTrait] || 0;
                 let focusActiveLvl = 0;
-                const focusInfo = MOCK_TRAITS[focusTrait];
+                const focusInfo = allTraits[focusTrait];
                 if (focusInfo) {
                   focusInfo.levels.forEach(l => { if (focusCount >= l) focusActiveLvl = l; });
                   score += focusCount * 1000;
@@ -153,15 +177,27 @@ export default function App() {
                 }
               }
 
+              let activeNonUniqueLevels = 0;
               for (const [trait, count] of Object.entries(counts)) {
                 if (trait === focusTrait) continue; 
-                const info = MOCK_TRAITS[trait];
+                const info = allTraits[trait];
                 if (info) {
+                  const isUnique = info.levels.length === 1 && info.levels[0] === 1;
+                  if (excludeUnique && isUnique) continue;
+
                   let activeLvl = 0;
                   info.levels.forEach(l => { if (count >= l) activeLvl = l; });
-                  if (activeLvl > 0) score += (activeLvl * 200); 
+                  if (activeLvl > 0) {
+                    score += (activeLvl * 200); 
+                    if (!isUnique) activeNonUniqueLevels++;
+                  }
                   score += count * 15; 
                 }
+              }
+
+              // Redeemer Bonus: Scale with active non-unique traits
+              if (counts['Redeemer'] > 0) {
+                score += activeNonUniqueLevels * 500;
               }
 
               const costSum = newUnits.reduce((acc, u) => acc + u.cost, 0);
@@ -198,7 +234,7 @@ export default function App() {
   const handleImportBoard = () => {
     const code = prompt('Paste your TFT Team Code here:');
     if (!code) return;
-    const newBoard = importBoardFromCode(code);
+    const newBoard = importBoardFromCode(code, allChampions);
     if (newBoard) {
       setBoards(prev => [...prev, newBoard]);
       setActiveBoardId(newBoard.id);
@@ -207,17 +243,29 @@ export default function App() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-4">
+        <Loader2 size={48} className="text-blue-500 animate-spin" />
+        <p className="text-slate-400 font-bold animate-pulse uppercase tracking-widest">Initializing Engine...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-4 md:p-6 font-sans flex flex-col gap-6">
       <div className="flex justify-between items-center shrink-0">
-        <h1 className="text-2xl font-black italic tracking-tighter text-white uppercase">
-          TFT <span className="text-blue-500">Engine</span>
-        </h1>
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-2xl font-black italic tracking-tighter text-white uppercase">
+            TFT <span className="text-blue-500">Engine</span>
+          </h1>
+          <span className="text-[10px] font-bold text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 tracking-widest uppercase">v0.4.2</span>
+        </div>
         <button 
           onClick={handleImportBoard}
           className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg"
         >
-          <Share2 size={16} className="rotate-180" /> Import Team
+          <Download size={16} /> Import Team
         </button>
       </div>
 
@@ -239,27 +287,48 @@ export default function App() {
               onAddEmblem={(bid) => setEmblemConfig(bid)}
               onRemoveEmblem={handleRemoveEmblem}
               onTraitClick={(boardId, traitName) => setTraitPopup({ boardId, traitName })}
-              onOpenFill={(boardId) => setFillModal({ boardId, focusTrait: '', targetSize: 8 })}
+              onOpenFill={(boardId) => {
+                const b = boards.find(x => x.id === boardId);
+                const nextSize = Math.min(10, b.units.length + 1);
+                setFillModal({ boardId, focusTrait: '', targetSize: nextSize, excludeUnique: false });
+              }}
               onExport={handleExportBoard}
               onUpdateUnitTrait={handleUpdateUnitTrait}
+              allChampions={allChampions}
+              allTraits={allTraits}
             />
           ))}
         </div>
       </div>
 
 
-      <div className="bg-slate-800 rounded-lg shadow-xl p-4 border border-slate-700 flex flex-col h-72 shrink-0">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-slate-800 rounded-lg shadow-xl p-4 border border-slate-700 flex flex-col h-80 shrink-0">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <div className="flex items-center gap-4">
             <h2 className="text-lg font-bold flex items-center gap-2">
               <Users className="text-green-400" size={20} /> Champion Pool
             </h2>
+            <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
+              {['all', 1, 2, 3, 4, 5].map(cost => (
+                <button
+                  key={cost}
+                  onClick={() => setSelectedCost(cost)}
+                  className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
+                    selectedCost === cost 
+                      ? 'bg-blue-600 text-white shadow-lg' 
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  {cost === 'all' ? 'All' : `$${cost}`}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="relative w-64">
+          <div className="relative w-full md:w-64">
             <Search className="absolute left-2 top-2 text-slate-400" size={16} />
             <input 
               type="text" 
-              placeholder="Search champions..."
+              placeholder="Search pool..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-900 border border-slate-600 rounded-full py-1.5 pl-8 pr-4 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
@@ -273,20 +342,29 @@ export default function App() {
                <button
                  key={champ.id}
                  onClick={() => handleAddToBoard(activeBoardId, champ)}
-                 className={`p-2 rounded border border-slate-700 bg-slate-900 hover:bg-slate-700 hover:border-slate-500 transition-all text-left flex flex-col gap-1`}
+                 className={`p-2 rounded border-2 transition-all text-left flex flex-col gap-1.5 group relative overflow-hidden ${
+                   getCostColor(champ.cost).replace('text-', 'border-').replace('border-', 'border-')
+                 } bg-slate-900 hover:bg-slate-800 hover:scale-[1.02] hover:shadow-lg`}
                >
-                 <div className="flex justify-between items-center w-full">
-                   <span className="font-semibold text-xs truncate pr-1">{champ.name}</span>
-                   <span className={`text-[10px] font-bold px-1.5 rounded ${getCostColor(champ.cost).replace('text-', 'bg-').replace('border-', 'bg-').replace('-400', '-900')} text-white`}>
+                 <div className="flex justify-between items-center w-full relative z-10">
+                   <span className="font-bold text-xs truncate pr-1 text-slate-100">{champ.name}</span>
+                   <span className={`text-[10px] font-black px-1.5 rounded ${getCostColor(champ.cost).replace('text-', 'bg-').replace('border-', 'bg-').replace('-400', '-950')} text-white`}>
                      ${champ.cost}
                    </span>
                  </div>
-                 <div className="text-[8px] text-slate-400 truncate w-full uppercase tracking-wider">
+                 <div className="text-[9px] text-slate-400 truncate w-full uppercase tracking-tighter relative z-10 font-medium">
                    {champ.traits.join(' • ')}
                  </div>
+                 <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity ${getCostColor(champ.cost).replace('text-', 'bg-').replace('border-', 'bg-')}`} />
                </button>
              ))}
            </div>
+           {filteredChampions.length === 0 && (
+             <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-2">
+               <Search size={32} strokeWidth={1} />
+               <p className="text-sm italic">No champions found matching your filters</p>
+             </div>
+           )}
         </div>
       </div>
 
@@ -329,7 +407,7 @@ export default function App() {
             
             <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                {MOCK_CHAMPIONS
+                {allChampions
                   .filter(c => c.traits.includes(traitPopup.traitName))
                   .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name))
                   .map(champ => (
@@ -370,7 +448,7 @@ export default function App() {
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Target Team Size</label>
                 <input 
                   type="range" 
-                  min={boards.find(b => b.id === fillModal.boardId).units.length + 1} 
+                  min={Math.min(10, boards.find(b => b.id === fillModal.boardId).units.length + 1)} 
                   max="10" 
                   value={fillModal.targetSize}
                   onChange={e => setFillModal(prev => ({ ...prev, targetSize: parseInt(e.target.value) }))}
@@ -389,16 +467,43 @@ export default function App() {
                   disabled={isCalculating}
                 >
                   <option value="">🔮 Balanced (Best Fit)</option>
-                  {Object.keys(MOCK_TRAITS).sort().map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
+                  <optgroup label="Core Synergies">
+                    {Object.entries(allTraits)
+                      .filter(([_, info]) => info.levels.length > 1)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([t]) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="Unique Traits">
+                    {Object.entries(allTraits)
+                      .filter(([_, info]) => info.levels.length === 1 && info.levels[0] === 1)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([t]) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                  </optgroup>
                 </select>
                 <p className="text-[10px] text-slate-500 mt-1">The engine will heavily prioritize this trait, while optimizing the rest of the board around it.</p>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input 
+                    type="checkbox"
+                    checked={fillModal.excludeUnique}
+                    onChange={e => setFillModal(prev => ({ ...prev, excludeUnique: e.target.checked }))}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-slate-800"
+                    disabled={isCalculating}
+                  />
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-slate-300 transition-colors">Exclude Unique Traits</span>
+                </label>
+                <p className="text-[10px] text-slate-500 mt-1 italic">Ignore single-unit traits (e.g. Dark Lady) in optimization.</p>
               </div>
             </div>
 
             <button 
-              onClick={() => handleAutoFill(fillModal.boardId, fillModal.focusTrait, fillModal.targetSize)}
+              onClick={() => handleAutoFill(fillModal.boardId, fillModal.focusTrait, fillModal.targetSize, fillModal.excludeUnique)}
               disabled={isCalculating}
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded font-bold transition-colors flex items-center justify-center gap-2"
             >
