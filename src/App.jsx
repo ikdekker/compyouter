@@ -195,8 +195,32 @@ export default function App() {
     }, 100); 
   };
 
+  const handleImportBoard = () => {
+    const code = prompt('Paste your TFT Team Code here:');
+    if (!code) return;
+    const newBoard = importBoardFromCode(code);
+    if (newBoard) {
+      setBoards(prev => [...prev, newBoard]);
+      setActiveBoardId(newBoard.id);
+    } else {
+      alert('Invalid team code!');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-4 md:p-6 font-sans flex flex-col gap-6">
+      <div className="flex justify-between items-center shrink-0">
+        <h1 className="text-2xl font-black italic tracking-tighter text-white uppercase">
+          TFT <span className="text-blue-500">Engine</span>
+        </h1>
+        <button 
+          onClick={handleImportBoard}
+          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg"
+        >
+          <Share2 size={16} className="rotate-180" /> Import Team
+        </button>
+      </div>
+
       <div className="flex-1 overflow-x-auto pb-2 custom-scrollbar">
         <div className="flex gap-4 h-full">
           {boards.map(board => (

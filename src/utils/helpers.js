@@ -153,33 +153,85 @@ export const getSuggestions = (units, emblems = [], strategy = 'standard') => {
   return scored.slice(0, 6);
 };
 
+export const getSortedChampionList = () => {
+  return [...MOCK_CHAMPIONS].sort((a, b) => a.name.localeCompare(b.name));
+};
+
 export const exportBoardToCode = (board) => {
-  const data = {
-    n: board.name,
-    s: board.strategy,
-    e: board.emblems,
-    u: board.units.map(u => ({ id: u.id, t: u.selectedTrait }))
-  };
-  return btoa(JSON.stringify(data));
+  const sortedChamps = getSortedChampionList();
+  const prefix = "01";
+  const suffix = "TFTSet13";
+  
+  // Get unique champion names on board (Team Planner only cares about identity)
+  const boardChampNames = Array.from(new Set(board.units.map(u => u.name)));
+  
+  let hexBody = "";
+  for (let i = 0; i < 10; i++) {
+    if (i < boardChampNames.length) {
+      const champIndex = sortedChamps.findIndex(c => c.name === boardChampNames[i]);
+      if (champIndex !== -1) {
+        // 1-based index in hex
+        const hexId = (champIndex + 1).toString(16).padStart(2, '0').toUpperCase();
+        hexBody += hexId;
+      } else {
+        hexBody += "00";
+      }
+    } else {
+      hexBody += "00";
+    }
+  }
+  
+  return `${prefix}${hexBody}${suffix}`;
 };
 
 export const importBoardFromCode = (code) => {
   try {
-    const data = JSON.parse(atob(code));
+    // Official format: 01 + (10 * 2 hex) + TFTSet13
+    if (!code.startsWith("01") || !code.includes("TFTSet13")) {
+      // Fallback to old Base64 format if someone is still using it
+      const data = JSON.parse(atob(code));
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        name: data.n || 'Imported Board',
+        strategy: data.s || 'standard',
+        emblems: data.e || [],
+        units: (data.u || []).map(u => {
+          const base = MOCK_CHAMPIONS.find(c => c.id === u.id);
+          if (!base) return null;
+          return {
+            ...base,
+            instanceId: Math.random().toString(36).substr(2, 9),
+            selectedTrait: u.t
+          };
+        }).filter(u => u !== null)
+      };
+    }
+
+    const sortedChamps = getSortedChampionList();
+    const hexPart = code.substring(2, 22);
+    const units = [];
+    
+    for (let i = 0; i < 10; i++) {
+      const hexId = hexPart.substring(i * 2, i * 2 + 2);
+      if (hexId === "00") continue;
+      
+      const index = parseInt(hexId, 16) - 1;
+      if (index >= 0 && index < sortedChamps.length) {
+        const champ = sortedChamps[index];
+        units.push({
+          ...champ,
+          instanceId: Math.random().toString(36).substr(2, 9),
+          selectedTrait: champ.selectableTraits ? champ.selectableTraits[0] : undefined
+        });
+      }
+    }
+
     return {
       id: Math.random().toString(36).substr(2, 9),
-      name: data.n || 'Imported Board',
-      strategy: data.s || 'standard',
-      emblems: data.e || [],
-      units: (data.u || []).map(u => {
-        const base = MOCK_CHAMPIONS.find(c => c.id === u.id);
-        if (!base) return null;
-        return {
-          ...base,
-          instanceId: Math.random().toString(36).substr(2, 9),
-          selectedTrait: u.t
-        };
-      }).filter(u => u !== null)
+      name: 'Imported Team',
+      strategy: 'standard',
+      emblems: [],
+      units
     };
   } catch (e) {
     console.error('Failed to import board', e);
