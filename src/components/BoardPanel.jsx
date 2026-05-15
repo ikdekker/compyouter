@@ -71,7 +71,7 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
              </div>
              
              <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-1 rounded-md border border-slate-700/50">
-                <span className="text-[10px] uppercase font-bold text-slate-500 mr-1">Pool:</span>
+                <span className="text-[10px] uppercase font-bold text-slate-500 mr-1">Costs:</span>
                 {costOverview}
              </div>
            </div>
