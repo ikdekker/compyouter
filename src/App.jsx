@@ -195,9 +195,9 @@ export default function App() {
                 }
               }
 
-              // Redeemer Bonus: Scale with active non-unique traits
-              if (counts['Redeemer'] > 0) {
-                score += activeNonUniqueLevels * 500;
+              // Redeemer Bonus: Scale with active non-unique traits (situational)
+              if (counts['Redeemer'] > 0 && activeNonUniqueLevels >= 3) {
+                score += activeNonUniqueLevels * 100;
               }
 
               const costSum = newUnits.reduce((acc, u) => acc + u.cost, 0);
