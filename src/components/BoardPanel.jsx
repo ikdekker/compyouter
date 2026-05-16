@@ -23,15 +23,6 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
     return counts;
   }, [board.units]);
 
-  // Strategy Detection
-  const proposedStrategy = useMemo(() => {
-     const coreUnits = board.units.filter(u => u.isCore);
-     const lowCostCore = coreUnits.filter(u => u.cost <= 2).length;
-     if (lowCostCore >= 2) return 'reroll';
-     if (board.units.some(u => u.cost >= 4)) return 'standard';
-     return 'flexible';
-  }, [board.units]);
-
   const currentTraitCounts = useMemo(() => getBoardTraitCounts(board.units, board.emblems), [board.units, board.emblems]);
 
   const hoveredChampTraits = useMemo(() => {
@@ -107,11 +98,6 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
                 <span className="text-[10px] uppercase font-bold text-slate-500 mr-1">Costs:</span>
                 {costOverview}
              </div>
-
-             <div className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-blue-900/30 bg-blue-900/10">
-                <span className="text-[9px] uppercase font-black text-blue-500">Rec:</span>
-                <span className="text-[10px] font-bold text-blue-300 capitalize">{proposedStrategy}</span>
-             </div>
            </div>
 
            <div className="flex flex-wrap items-center gap-1.5 pl-6 mt-1">
@@ -136,9 +122,6 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
            <div className="hidden md:flex items-center gap-2">
              <button onClick={(e) => { e.stopPropagation(); onExport(board.id); }} className="p-1.5 bg-green-900/60 border border-green-500/50 hover:bg-green-600 hover:border-green-400 rounded text-green-300 hover:text-white shrink-0 shadow-lg transition-all active:scale-95" title="Copy Board Code">
                <Copy size={16} />
-             </button>
-             <button onClick={(e) => { e.stopPropagation(); onOpenFill(board.id); }} className="p-1.5 bg-indigo-900/60 border border-indigo-500/50 hover:bg-indigo-600 hover:border-indigo-400 rounded text-indigo-300 hover:text-white shrink-0 flex items-center gap-1 shadow-lg transition-all active:scale-95" title="Engine Analysis Auto-Fill">
-               <Wand2 size={16} />
              </button>
              <button onClick={(e) => { e.stopPropagation(); onBranch(board.id); }} className="p-1.5 bg-slate-700 hover:bg-blue-600 rounded text-slate-300 hover:text-white shrink-0 shadow-lg transition-all active:scale-95" title="Branch this path">
                <GitBranch size={16} />
@@ -169,12 +152,6 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
                       className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-green-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
                     >
                       <Copy size={16} className="text-green-400" /> Copy Team Code
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onOpenFill(board.id); setShowMoreActions(false); }}
-                      className="w-full px-4 py-3 text-left text-sm font-bold text-slate-200 hover:bg-indigo-600 flex items-center gap-3 border-b border-slate-700 transition-colors"
-                    >
-                      <Wand2 size={16} className="text-indigo-400" /> Engine Auto-Fill
                     </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); onBranch(board.id); setShowMoreActions(false); }}

@@ -1,4 +1,4 @@
-import { MOCK_TRAITS, MOCK_CHAMPIONS } from '../data/tftData.js';
+import { MOCK_TRAITS, MOCK_CHAMPIONS, SHOP_ODDS } from '../data/tftData.js';
 
 export const getTierColor = (tier) => {
   switch(tier) {

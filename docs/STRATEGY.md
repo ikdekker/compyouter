@@ -1,56 +1,30 @@
-# TFT Set 17 Strategic Roadmap (Into the Arcane)
+# TFT Strategic Framework
 
-This document outlines the core transition theory for Set 17 to inform the TFT Engine's optimization logic.
+This document outlines the core theoretical foundations used by the TFT Engine assistant.
 
-## 1. Leveling Milestones (Tempo)
-*   **Stage 2-1:** Level 4 (Start of game stabilization)
-*   **Stage 2-5:** Level 5 (The "Matching Comp" spike)
-*   **Stage 3-2:** Level 6 (Stabilizing mid-game)
-*   **Stage 4-2:** Level 8 (The "Final Comp" roll-down)
+## 1. General TFT Principles (Set-Agnostic)
 
-## 2. Early Game Openers (Levels 4 & 5)
+### Shared Pool & Bag Sizes
+*   **The Shared Pool:** Every champion is drawn from a limited global bag.
+*   **Contesting:** If multiple players buy the same unit, the hit-probability for others drops significantly.
+*   **Tempo & Milestones:** Standard games follow a rhythm (Stage 2-1 Lvl 4, 3-2 Lvl 6, 4-2 Lvl 8). The tool must reflect the current level's reality.
 
-### Win-Streak Lines
-*   **Vanguard + Shepherd:** Nasus & Leona (Frontline) + Teemo (AP Carry). Teemo holds AP items for Aurelion Sol/Karma.
-*   **Rogue:** Talon & Briar. High early burst, Talon holds AD items for Corki/Master Yi.
-*   **Stargazer:** TF & Caitlyn. High variance based on the game's Constellation (Mountain/Altar are best for streaking).
+### Vertical (Tall) vs. Horizontal (Wide)
+*   **Vertical Strategy:** Chasing a single trait to its highest tier (Gold). These are often "Win Conditions" (massive power spikes).
+*   **Horizontal Strategy:** Activating as many small (Bronze) traits as possible. This provides flexibility and specialized utility but lower raw peak power.
+*   **Scoring Priority:** Vertical milestones should generally outweigh a "wide" board of unrelated bronze traits.
 
-### Economy/Loss-Streak Lines
-*   **Timebreaker:** Cho'Gath & Ezreal. Grants free rerolls on losses to build gold.
-*   **Primordian:** Random unit generation for gold farming.
+### Core vs. Holders
+*   **Core Units:** The foundation of your endgame board. They must be preserved during transitions.
+*   **Holders:** Temporary units that carry items or traits until you find your high-cost carries.
 
-## 3. The Mid-Game Bridge (Level 6 & 7)
-The goal is to replace 1-cost holders with 3-cost stabilizers:
-*   **AP Line:** Use **Viktor** to hold items for LeBlanc/Asol.
-*   **AD Line:** Use **Kai'Sa** to hold items for Jhin/Corki.
-*   **Frontline:** **Illaoi** is the premier mid-game tank for almost any comp.
+## 2. Set 17 Specifics: Space Gods
 
-## 4. Meta End-Game Caps (Level 8 & 9)
-*   **Meeple Corki/Riven:** Transition from Vanguard/Rogue.
-*   **6 Dark Star (Asol):** Requires a "Massive" Aurelion Sol.
-*   **Brawler Master Yi:** Needs Edge of Night survival.
-*   **6 Mecha:** Requires hitting the "Mighty Mech" unit at Level 8.
+### Unique Meta Mechanics
+*   **Meeple Cloning:** (7) Meeple unlocks a bench slot that clones units. This makes vertical Meeple a premier "Economic" win condition.
+*   **Space Groove Scaling:** Rewards long fights with stacking AP/AD. Thrives with a strong "Bastion" or "Vanguard" frontline.
+*   **Fateweaver Luck:** Removes RNG from abilities, making high-variance units (TF, Milio) reliable carries.
 
-## 5. In-Game Assistant Logic
-
-### Level-Aware Optimization
-The assistant must respect **Shop Odds** for the current player level:
-*   **Hard Filter:** If a unit's cost has a 0% hit rate at the current level, it **must not** appear in "Optimal Additions" or "Auto-Fill" results.
-*   **Weighting:** Units should be prioritized based on their actual hit probability to reflect realistic rolling scenarios.
-
-### Playstyle Detection & Strategy
-The tool should dynamically propose strategies based on the board's cost structure:
-
-#### **Reroll Strategy (1/2-Cost Core)**
-*   **Detection:** Proposed if the board has 3+ units that are "Core" and cost $1 or $2.
-*   **Logic:** Prioritize hitting gold-tier synergies with low-cost units. Focus on "widening" the board with units that have a high hit rate at Levels 4-6.
-*   **Interest Optimization:** Suggest staying at the "Sweet Spot" level (e.g., Level 4 for 1-costs, Level 6 for 2-costs).
-
-#### **Standard Strategy (Fast 8/9)**
-*   **Detection:** Proposed if the board has 4-cost core units or high average board cost.
-*   **Logic:** Prioritize high-value 4 and 5-cost units. Use the "Mid-Game Bridge" to maintain health while leveling.
-
-### Tool Controls
-*   **Global Level:** A central player level control (1-10) that drives all hit-rate calculations.
-*   **Level Up/Down:** Rapid adjustment buttons to simulate the "Next Stage" or correct mistakes.
-*   **Transition Branching:** Quick-shifting must automatically set the target level and re-run the engine using the filtered pool.
+### Key Units
+*   **Redeemer (Rhaast):** A unique cap that enhances *other* non-unique traits. Only valuable on wide boards with 5+ active standard synergies.
+*   **The Mighty Mech:** A 4-cost anchor that acts as a bridge between mid-game and legendary boards.
