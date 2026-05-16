@@ -85,13 +85,17 @@ export const getSynergies = (units, emblems = [], allTraits = MOCK_TRAITS) => {
   });
 };
 
-export const getSuggestions = (units, emblems = [], strategy = 'standard', allChampions = MOCK_CHAMPIONS, allTraits = MOCK_TRAITS) => {
+export const getSuggestions = (units, emblems = [], strategy = 'standard', allChampions = MOCK_CHAMPIONS, allTraits = MOCK_TRAITS, playerLevel = 8) => {
   if (units.length === 0 || units.length >= 10) return [];
   const counts = getBoardTraitCounts(units, emblems);
   const uniqueChampions = new Set(units.map(u => u.name));
+  
+  // Get odds for current level
+  const odds = SHOP_ODDS[playerLevel] || [100, 0, 0, 0, 0];
 
   const scored = allChampions
     .filter(champ => !uniqueChampions.has(champ.name))
+    .filter(champ => odds[champ.cost - 1] > 0) // Hard filter: Cost must be available at this level
     .map(champ => {
       let bestScore = 0;
       let bestReasons = [];

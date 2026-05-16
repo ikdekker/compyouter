@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Users, X, ShieldPlus, Wand2, Loader2, Copy, MoreHorizontal, Download } from 'lucide-react';
 import BoardPanel from './components/BoardPanel';
-import { MOCK_TRAITS, MOCK_CHAMPIONS } from './data/tftData';
-import { getBoardTraitCounts, getCostColor, exportBoardToCode, importBoardFromCode } from './utils/helpers';
+import { MOCK_TRAITS, MOCK_CHAMPIONS, SHOP_ODDS } from './data/tftData';
+import { getBoardTraitCounts, getCostColor, exportBoardToCode, importBoardFromCode, getSuggestions } from './utils/helpers';
 import { fetchLatestTftData } from './utils/riotApi';
 
 export default function App() {
@@ -18,8 +18,6 @@ export default function App() {
     const loadData = async () => {
       const data = await fetchLatestTftData();
       if (data) {
-        // If DDragon doesn't have traits, we keep the mock ones for now
-        // but we prioritize DDragon champions
         setAllChampions(data.champions && data.champions.length > 0 ? data.champions : MOCK_CHAMPIONS);
         if (data.traits && Object.keys(data.traits).length > 0) {
           setAllTraits(data.traits);
@@ -37,6 +35,7 @@ export default function App() {
   const [fillModal, setFillModal] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [selectedCost, setSelectedCost] = useState('all');
+  const [playerLevel, setPlayerLevel] = useState(8);
 
   const handleAddToBoard = (boardId, champion) => {
     setBoards(prev => prev.map(b => {
@@ -69,7 +68,6 @@ export default function App() {
     const sourceBoard = boards.find(b => b.id === boardId);
     const newId = Math.random().toString(36).substr(2, 9);
     
-    // In a quick shift, we branch and immediately open the fill modal
     const newBoard = {
       id: newId,
       name: `Transition Lvl ${targetLevel}`,
@@ -80,8 +78,8 @@ export default function App() {
     
     setBoards(prev => [...prev, newBoard]);
     setActiveBoardId(newId);
+    setPlayerLevel(targetLevel);
     
-    // Pre-open the fill modal for the new board
     setTimeout(() => {
        setFillModal({ boardId: newId, focusTrait: '', targetSize: targetLevel, excludeUnique: false });
     }, 100);
@@ -144,7 +142,7 @@ export default function App() {
 
   const handleRemoveEmblem = (boardId, indexToRemove) => {
     setBoards(prev => prev.map(b => {
-      if (b.id === boardId) {
+      if (board.id === boardId) {
         return { ...b, emblems: (b.emblems || []).filter((_, idx) => idx !== indexToRemove) };
       }
       return b;
@@ -159,16 +157,18 @@ export default function App() {
   };
 
   const filteredChampions = useMemo(() => {
+    const odds = SHOP_ODDS[playerLevel] || [100, 0, 0, 0, 0];
     return allChampions
       .filter(c => {
         const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                              c.traits.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())) ||
                              (c.selectableTraits && c.selectableTraits.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())));
         const matchesCost = selectedCost === 'all' || c.cost === parseInt(selectedCost);
-        return matchesSearch && matchesCost;
+        const isAvailable = odds[c.cost - 1] > 0;
+        return matchesSearch && matchesCost && isAvailable;
       })
       .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name));
-  }, [searchTerm, selectedCost, allChampions]);
+  }, [searchTerm, selectedCost, allChampions, playerLevel]);
 
   const craftableTraits = Object.entries(allTraits)
     .filter(([_, info]) => !(info.levels.length === 1 && info.levels[0] === 1))
@@ -180,6 +180,8 @@ export default function App() {
     
     setTimeout(() => {
       const sourceBoard = boards.find(b => b.id === boardId);
+      const targetLvlOdds = SHOP_ODDS[targetSize] || SHOP_ODDS[playerLevel] || [100, 0, 0, 0, 0];
+      
       let beam = [{ units: [...sourceBoard.units], score: 0 }];
       const beamWidth = 25; 
 
@@ -188,7 +190,7 @@ export default function App() {
 
         for (let state of beam) {
           const existingNames = new Set(state.units.map(u => u.name));
-          const pool = allChampions.filter(c => !existingNames.has(c.name));
+          const pool = allChampions.filter(c => !existingNames.has(c.name) && targetLvlOdds[c.cost - 1] > 0);
 
           for (let champ of pool) {
             const traits = [...champ.traits];
@@ -230,10 +232,12 @@ export default function App() {
                 }
               }
 
-              // Redeemer Bonus: Scale with active non-unique traits (situational)
               if (counts['Redeemer'] > 0 && activeNonUniqueLevels >= 5) {
                 score += activeNonUniqueLevels * 100;
               }
+
+              const hitChance = targetLvlOdds[champ.cost - 1];
+              score += hitChance * 5;
 
               const costSum = newUnits.reduce((acc, u) => acc + u.cost, 0);
               score += costSum * 2;
@@ -294,7 +298,7 @@ export default function App() {
           <h1 className="text-2xl font-black italic tracking-tighter text-white uppercase">
             TFT <span className="text-blue-500">Engine</span>
           </h1>
-          <span className="text-[10px] font-bold text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 tracking-widest uppercase">v0.4.2</span>
+          <span className="text-[10px] font-bold text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 tracking-widest uppercase">v0.4.3</span>
         </div>
         <button 
           onClick={handleImportBoard}
@@ -331,6 +335,7 @@ export default function App() {
               onUpdateUnitTrait={handleUpdateUnitTrait}
               onUpdateUnitStatus={handleUpdateUnitStatus}
               onQuickShift={handleQuickShift}
+              playerLevel={playerLevel}
               allChampions={allChampions}
               allTraits={allTraits}
             />
@@ -341,24 +346,58 @@ export default function App() {
 
       <div className="bg-slate-800 rounded-lg shadow-xl p-4 border border-slate-700 flex flex-col h-80 shrink-0">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-6">
             <h2 className="text-lg font-bold flex items-center gap-2">
               <Users className="text-green-400" size={20} /> Champion Pool
             </h2>
-            <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
-              {['all', 1, 2, 3, 4, 5].map(cost => (
-                <button
-                  key={cost}
-                  onClick={() => setSelectedCost(cost)}
-                  className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                    selectedCost === cost 
-                      ? 'bg-blue-600 text-white shadow-lg' 
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                  }`}
-                >
-                  {cost === 'all' ? 'All' : `$${cost}`}
-                </button>
-              ))}
+            
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Player Level</span>
+                <div className="flex gap-1">
+                  <button onClick={() => setPlayerLevel(Math.max(1, playerLevel - 1))} className="w-4 h-4 flex items-center justify-center bg-slate-700 rounded hover:bg-slate-600 text-[10px] font-bold">-</button>
+                  <button onClick={() => setPlayerLevel(Math.min(10, playerLevel + 1))} className="w-4 h-4 flex items-center justify-center bg-slate-700 rounded hover:bg-slate-600 text-[10px] font-bold">+</button>
+                </div>
+              </div>
+              <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(lvl => (
+                  <button
+                    key={lvl}
+                    onClick={() => setPlayerLevel(lvl)}
+                    className={`w-7 h-7 flex items-center justify-center rounded-md text-xs font-bold transition-all ${
+                      playerLevel === lvl 
+                        ? 'bg-indigo-600 text-white shadow-lg' 
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    {lvl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Odds & Filters</span>
+              <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
+                {['all', 1, 2, 3, 4, 5].map(cost => (
+                  <button
+                    key={cost}
+                    onClick={() => setSelectedCost(cost)}
+                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all flex flex-col items-center min-w-[40px] ${
+                      selectedCost === cost 
+                        ? 'bg-blue-600 text-white shadow-lg' 
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>{cost === 'all' ? 'All' : `$${cost}`}</span>
+                    {cost !== 'all' && (
+                      <span className={`text-[8px] font-black ${selectedCost === cost ? 'text-blue-100' : 'text-slate-500'}`}>
+                        {SHOP_ODDS[playerLevel][cost - 1]}%
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <div className="relative w-full md:w-64">
@@ -399,7 +438,7 @@ export default function App() {
            {filteredChampions.length === 0 && (
              <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-2">
                <Search size={32} strokeWidth={1} />
-               <p className="text-sm italic">No champions found matching your filters</p>
+               <p className="text-sm italic">No champions available at Level {playerLevel} matching your filters</p>
              </div>
            )}
         </div>

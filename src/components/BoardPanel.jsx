@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { X, ShieldPlus, RefreshCcw, Star, Wand2, Lightbulb, GitBranch, Copy, MoreHorizontal, Anchor, TrendingUp } from 'lucide-react';
+import { X, ShieldPlus, RefreshCcw, Star, Wand2, Lightbulb, GitBranch, Copy, MoreHorizontal, Anchor, TrendingUp, Info } from 'lucide-react';
 import { getTierColor, getBoardTraitCounts, getSynergies, getSuggestions, getCostColor } from '../utils/helpers';
 
-const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, onClose, canClose, onAddDirect, onStrategyChange, onAddEmblem, onRemoveEmblem, onTraitClick, onOpenFill, onExport, onUpdateUnitTrait, onUpdateUnitStatus, onQuickShift, allChampions = [], allTraits = {} }) => {
+const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, onClose, canClose, onAddDirect, onStrategyChange, onAddEmblem, onRemoveEmblem, onTraitClick, onOpenFill, onExport, onUpdateUnitTrait, onUpdateUnitStatus, onQuickShift, playerLevel, allChampions = [], allTraits = {} }) => {
   const [hoveredTrait, setHoveredTrait] = useState(null);
   const [hoveredChampInstanceId, setHoveredChampInstanceId] = useState(null);
   const [showMoreActions, setShowMoreActions] = useState(false);
+  
+  // Use playerLevel for suggestions to filter by Shop Odds
+  const suggestedChampions = useMemo(() => getSuggestions(board.units, board.emblems, board.strategy, allChampions, allTraits, playerLevel), [board.units, board.emblems, board.strategy, allChampions, allTraits, playerLevel]);
   const synergies = useMemo(() => getSynergies(board.units, board.emblems, allTraits), [board.units, board.emblems, allTraits]);
-  const suggestedChampions = useMemo(() => getSuggestions(board.units, board.emblems, board.strategy, allChampions, allTraits), [board.units, board.emblems, board.strategy, allChampions, allTraits]);
   
   const activeTraits = synergies.filter(s => s.activeLevel > 0);
   const uniqueCount = activeTraits.filter(s => s.levels.length === 1 && s.levels[0] === 1).length;
@@ -19,6 +21,15 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
       if (counts[u.cost] !== undefined) counts[u.cost]++;
     });
     return counts;
+  }, [board.units]);
+
+  // Strategy Detection
+  const proposedStrategy = useMemo(() => {
+     const coreUnits = board.units.filter(u => u.isCore);
+     const lowCostCore = coreUnits.filter(u => u.cost <= 2).length;
+     if (lowCostCore >= 2) return 'reroll';
+     if (board.units.some(u => u.cost >= 4)) return 'standard';
+     return 'flexible';
   }, [board.units]);
 
   const currentTraitCounts = useMemo(() => getBoardTraitCounts(board.units, board.emblems), [board.units, board.emblems]);
@@ -63,7 +74,7 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
                   <button
                     key={lvl}
                     onClick={(e) => { e.stopPropagation(); onQuickShift(board.id, lvl); }}
-                    className="px-2 py-0.5 bg-slate-800 hover:bg-indigo-600 rounded text-[10px] font-black text-slate-300 hover:text-white transition-colors"
+                    className={`px-2 py-0.5 rounded text-[10px] font-black transition-colors ${playerLevel === lvl ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
                   >
                     L{lvl}
                   </button>
@@ -95,6 +106,11 @@ const BoardPanel = ({ board, isActive, isSingle, onFocus, onRemove, onBranch, on
              <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-1 rounded-md border border-slate-700/50">
                 <span className="text-[10px] uppercase font-bold text-slate-500 mr-1">Costs:</span>
                 {costOverview}
+             </div>
+
+             <div className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-blue-900/30 bg-blue-900/10">
+                <span className="text-[9px] uppercase font-black text-blue-500">Rec:</span>
+                <span className="text-[10px] font-bold text-blue-300 capitalize">{proposedStrategy}</span>
              </div>
            </div>
 

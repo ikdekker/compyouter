@@ -32,5 +32,25 @@ The goal is to replace 1-cost holders with 3-cost stabilizers:
 *   **6 Mecha:** Requires hitting the "Mighty Mech" unit at Level 8.
 
 ## 5. In-Game Assistant Logic
-*   **Rapid Shifting:** One-click transition from Lvl 5 -> 6 -> 8.
-*   **Placeholder Tracking:** Identifying which units are "Core" (staying until 8) vs "Holders" (being sold for 4-costs).
+
+### Level-Aware Optimization
+The assistant must respect **Shop Odds** for the current player level:
+*   **Hard Filter:** If a unit's cost has a 0% hit rate at the current level, it **must not** appear in "Optimal Additions" or "Auto-Fill" results.
+*   **Weighting:** Units should be prioritized based on their actual hit probability to reflect realistic rolling scenarios.
+
+### Playstyle Detection & Strategy
+The tool should dynamically propose strategies based on the board's cost structure:
+
+#### **Reroll Strategy (1/2-Cost Core)**
+*   **Detection:** Proposed if the board has 3+ units that are "Core" and cost $1 or $2.
+*   **Logic:** Prioritize hitting gold-tier synergies with low-cost units. Focus on "widening" the board with units that have a high hit rate at Levels 4-6.
+*   **Interest Optimization:** Suggest staying at the "Sweet Spot" level (e.g., Level 4 for 1-costs, Level 6 for 2-costs).
+
+#### **Standard Strategy (Fast 8/9)**
+*   **Detection:** Proposed if the board has 4-cost core units or high average board cost.
+*   **Logic:** Prioritize high-value 4 and 5-cost units. Use the "Mid-Game Bridge" to maintain health while leveling.
+
+### Tool Controls
+*   **Global Level:** A central player level control (1-10) that drives all hit-rate calculations.
+*   **Level Up/Down:** Rapid adjustment buttons to simulate the "Next Stage" or correct mistakes.
+*   **Transition Branching:** Quick-shifting must automatically set the target level and re-run the engine using the filtered pool.
